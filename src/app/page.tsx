@@ -6,34 +6,106 @@ import {
   StrategyType, 
   Candle, 
   BacktestResults, 
-  Position, 
-  TradeOrder 
+  Position 
 } from "@/types/trading";
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Activity, 
   Zap, 
   Play, 
   Pause, 
-  RotateCcw, 
-  Sliders, 
   ShieldCheck, 
   Sun, 
   Moon, 
-  DollarSign, 
   BarChart3, 
   Layers, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle 
+  Info,
+  CheckCircle2 
 } from "lucide-react";
 
 const initialPairs: Record<CryptoPair, { base: number; step: number; count: number }> = {
-  "BTC/USDT": { base: 89420.50, step: 25.0, count: 12 },
-  "ETH/USDT": { base: 3568.20, step: 2.5, count: 12 },
-  "SOL/USDT": { base: 212.80, step: 0.4, count: 12 },
-  "BNB/USDT": { base: 665.40, step: 1.2, count: 12 }
+  "BTC/USDT": { base: 89420.50, step: 25.0, count: 14 },
+  "ETH/USDT": { base: 3568.20, step: 2.5, count: 14 },
+  "SOL/USDT": { base: 212.80, step: 0.4, count: 14 },
+  "BNB/USDT": { base: 665.40, step: 1.2, count: 14 }
+};
+
+interface StrategyConfig {
+  name: string;
+  shortName: string;
+  regime: string;
+  desc: string;
+  defaultSL: number;
+  defaultTP: number;
+  defaultLev: number;
+  winRate: number;
+  profitFactor: number;
+  drawdown: number;
+  sharpe: number;
+  trades: number;
+  roiPct: number;
+}
+
+const strategyMatrix: Record<StrategyType, StrategyConfig> = {
+  rsi_mean_reversion: {
+    name: "RSI Mean Reversion (Reversão à Média HFT)",
+    shortName: "RSI Reversion",
+    regime: "Modo: Reversão HFT",
+    desc: "Identifica sobrecompra (>70) e sobrevenda (<30) para entradas de reversão estatística de alta frequência.",
+    defaultSL: 1.8,
+    defaultTP: 4.2,
+    defaultLev: 5,
+    winRate: 71.4,
+    profitFactor: 2.35,
+    drawdown: -6.2,
+    sharpe: 2.08,
+    trades: 164,
+    roiPct: 44.8
+  },
+  trend_following: {
+    name: "SuperTrend Momentum (Seguidor de Tendência)",
+    shortName: "SuperTrend",
+    regime: "Modo: Tendência Parabólica",
+    desc: "Rastreia rompimentos direcionais usando ATR e cruzamento das médias móveis EMA 20 e EMA 50.",
+    defaultSL: 4.2,
+    defaultTP: 12.5,
+    defaultLev: 3,
+    winRate: 58.2,
+    profitFactor: 2.85,
+    drawdown: -8.8,
+    sharpe: 1.94,
+    trades: 98,
+    roiPct: 56.4
+  },
+  grid_trading: {
+    name: "Grid Trading Neural (Acumulação em Faixa)",
+    shortName: "Grid Accumulator",
+    regime: "Modo: Range Arbitragem",
+    desc: "Espalha uma matriz geométrica de ordens limite de compra e venda a cada $150 de variação para lucrar em lateralização.",
+    defaultSL: 7.5,
+    defaultTP: 1.6,
+    defaultLev: 1,
+    winRate: 89.2,
+    profitFactor: 1.95,
+    drawdown: -4.5,
+    sharpe: 2.25,
+    trades: 284,
+    roiPct: 38.6
+  },
+  bollinger_scalp: {
+    name: "Bollinger Volatility Breakout (Scalper)",
+    shortName: "Bollinger Scalp",
+    regime: "Modo: Volatilidade Breakout",
+    desc: "Monitora o estreitamento das bandas de 2.0 desvios padrões e entra a favor do rompimento súbito de volume.",
+    defaultSL: 2.5,
+    defaultTP: 7.0,
+    defaultLev: 3,
+    winRate: 64.5,
+    profitFactor: 2.22,
+    drawdown: -7.1,
+    sharpe: 1.88,
+    trades: 145,
+    roiPct: 48.2
+  }
 };
 
 export default function ZenBotProPage() {
@@ -41,6 +113,8 @@ export default function ZenBotProPage() {
   const [strategy, setStrategy] = useState<StrategyType>("rsi_mean_reversion");
   const [isBotRunning, setIsBotRunning] = useState<boolean>(true);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [timeframe, setTimeframe] = useState<string>("1m");
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
   
   // Real-time market state
   const [currentPrice, setCurrentPrice] = useState<number>(89420.50);
@@ -50,22 +124,22 @@ export default function ZenBotProPage() {
 
   // Backtest parameters
   const [initialCapital, setInitialCapital] = useState<number>(10000);
-  const [stopLoss, setStopLoss] = useState<number>(2.5);
-  const [takeProfit, setTakeProfit] = useState<number>(6.5);
-  const [leverage, setLeverage] = useState<number>(3);
+  const [stopLoss, setStopLoss] = useState<number>(1.8);
+  const [takeProfit, setTakeProfit] = useState<number>(4.2);
+  const [leverage, setLeverage] = useState<number>(5);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [backtestStats, setBacktestStats] = useState<BacktestResults>({
     initialCapital: 10000,
-    finalCapital: 14285.50,
-    netProfit: 4285.50,
-    netProfitPercent: 42.85,
-    winRate: 68.4,
-    totalTrades: 142,
-    winningTrades: 97,
-    losingTrades: 45,
-    profitFactor: 2.14,
-    maxDrawdown: -7.8,
-    sharpeRatio: 1.92
+    finalCapital: 14480.00,
+    netProfit: 4480.00,
+    netProfitPercent: 44.8,
+    winRate: 71.4,
+    totalTrades: 164,
+    winningTrades: 117,
+    losingTrades: 47,
+    profitFactor: 2.35,
+    maxDrawdown: -6.2,
+    sharpeRatio: 2.08
   });
 
   // Open positions
@@ -98,7 +172,34 @@ export default function ZenBotProPage() {
     }
   ]);
 
-  // Initialize candles on pair change
+  // Strategy change handler: auto-populates SL, TP, Leverage, and metrics!
+  const onStrategySelect = (stratKey: StrategyType) => {
+    setStrategy(stratKey);
+    const s = strategyMatrix[stratKey];
+    setStopLoss(s.defaultSL);
+    setTakeProfit(s.defaultTP);
+    setLeverage(s.defaultLev);
+
+    const profit = Math.round(initialCapital * (s.roiPct / 100) * 100) / 100;
+    setBacktestStats({
+      initialCapital,
+      finalCapital: initialCapital + profit,
+      netProfit: profit,
+      netProfitPercent: s.roiPct,
+      winRate: s.winRate,
+      totalTrades: s.trades,
+      winningTrades: Math.floor(s.trades * (s.winRate / 100)),
+      losingTrades: Math.floor(s.trades * (1 - s.winRate / 100)),
+      profitFactor: s.profitFactor,
+      maxDrawdown: s.drawdown,
+      sharpeRatio: s.sharpe
+    });
+
+    setAlertMsg(`Estratégia carregada: ${s.name}. Parâmetros e overlays reconfigurados!`);
+    setTimeout(() => setAlertMsg(null), 3500);
+  };
+
+  // Initialize candles on pair or timeframe change
   useEffect(() => {
     const cfg = initialPairs[selectedPair];
     setCurrentPrice(cfg.base);
@@ -121,7 +222,7 @@ export default function ZenBotProPage() {
       p = close;
     }
     setCandles(newCandles);
-  }, [selectedPair]);
+  }, [selectedPair, timeframe]);
 
   // Real-time market tick engine
   useEffect(() => {
@@ -179,20 +280,20 @@ export default function ZenBotProPage() {
   const runBacktest = () => {
     setIsSimulating(true);
     setTimeout(() => {
-      const mult = strategy === "rsi_mean_reversion" ? 1.08 : strategy === "trend_following" ? 1.14 : 0.96;
-      const profit = Math.round(initialCapital * (0.35 * mult) * 100) / 100;
+      const s = strategyMatrix[strategy];
+      const profit = Math.round(initialCapital * (s.roiPct / 100) * 100) / 100;
       setBacktestStats({
         initialCapital,
         finalCapital: initialCapital + profit,
         netProfit: profit,
-        netProfitPercent: Math.round((profit / initialCapital) * 10000) / 100,
-        winRate: Math.round((66 + Math.random() * 6) * 10) / 10,
-        totalTrades: Math.floor(130 + Math.random() * 30),
-        winningTrades: Math.floor(90 + Math.random() * 15),
-        losingTrades: Math.floor(40 + Math.random() * 10),
-        profitFactor: Math.round((2.0 + Math.random() * 0.4) * 100) / 100,
-        maxDrawdown: -Math.round((6.0 + Math.random() * 2.5) * 10) / 10,
-        sharpeRatio: Math.round((1.8 + Math.random() * 0.3) * 100) / 100,
+        netProfitPercent: s.roiPct,
+        winRate: s.winRate,
+        totalTrades: s.trades,
+        winningTrades: Math.floor(s.trades * (s.winRate / 100)),
+        losingTrades: Math.floor(s.trades * (1 - s.winRate / 100)),
+        profitFactor: s.profitFactor,
+        maxDrawdown: s.drawdown,
+        sharpeRatio: s.sharpe
       });
       setIsSimulating(false);
     }, 500);
@@ -202,12 +303,14 @@ export default function ZenBotProPage() {
     setPositions(positions.filter(p => p.id !== id));
   };
 
+  const currentStrat = strategyMatrix[strategy];
+
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${isDarkMode ? "dark bg-[#050811] text-slate-100" : "bg-slate-50 text-slate-800"}`}>
       
       {/* Top Header */}
       <header className={`border-b sticky top-0 z-50 px-4 lg:px-6 py-2.5 backdrop-blur-xl transition-colors duration-200 ${
-        isDarkMode ? "bg-[#0b1120]/90 border-slate-800/80 text-white" : "bg-white/95 border-slate-200 text-slate-900 shadow-sm"
+        isDarkMode ? "bg-[#0b1120]/95 border-slate-800/80 text-white" : "bg-white/95 border-slate-200 text-slate-900 shadow-sm"
       }`}>
         <div className="max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
           
@@ -224,10 +327,10 @@ export default function ZenBotProPage() {
                   </span>
                   <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    LIVE WEBSOCKET
+                    WEBSOCKET LIVE
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">Binance Futures & CCXT Turnkey Engine</p>
+                <p className="text-[11px] text-slate-400">Binance & Coinbase Algorithmic Engine</p>
               </div>
             </div>
 
@@ -319,6 +422,14 @@ export default function ZenBotProPage() {
         </div>
       </header>
 
+      {/* Dynamic Alert Banner when Strategy is switched */}
+      {alertMsg && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-6 py-2 text-center text-xs font-semibold text-emerald-400 transition-all flex items-center justify-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{alertMsg}</span>
+        </div>
+      )}
+
       {/* Main Grid */}
       <main className="flex-1 max-w-[1800px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
         
@@ -334,22 +445,62 @@ export default function ZenBotProPage() {
               <div className="flex items-center gap-3">
                 <span className="text-sm font-black flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-500" />
-                  Feed de Preço em Tempo Real
+                  Feed de Preço & Indicadores Ativos
                 </span>
-                <span className="text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">1m | Heikin-Ashi</span>
+                {/* Timeframe selector */}
+                <div className={`flex items-center rounded-lg p-0.5 text-[11px] font-mono border ${
+                  isDarkMode ? "bg-slate-900 border-slate-800" : "bg-slate-100 border-slate-200"
+                }`}>
+                  {["1m", "5m", "15m", "1h", "1d"].map((tf) => (
+                    <button
+                      key={tf}
+                      onClick={() => setTimeframe(tf)}
+                      className={`px-2 py-0.5 rounded font-bold transition ${
+                        timeframe === tf ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Dynamic Indicator Badges */}
               <div className="flex items-center gap-1.5 text-xs flex-wrap font-mono">
-                <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">EMA 20</span>
-                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">EMA 50</span>
-                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">RSI: 64.2</span>
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">
+                  {currentStrat.regime}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
+                  Lev: {leverage}x
+                </span>
               </div>
             </div>
 
-            {/* Candlestick Canvas */}
+            {/* Strategy Description Banner */}
+            <div className={`mt-3 p-3 rounded-xl border text-xs flex items-center justify-between ${
+              isDarkMode ? "bg-slate-900/70 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-700"
+            }`}>
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span><strong>{currentStrat.name}:</strong> {currentStrat.desc}</span>
+              </div>
+            </div>
+
+            {/* Candlestick Canvas & Overlays */}
             <div className={`mt-4 relative rounded-xl p-4 border overflow-hidden ${
               isDarkMode ? "bg-[#070b14] border-slate-800/80" : "bg-slate-50 border-slate-200"
             }`}>
-              <div className="h-80 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-10">
+              {/* Dynamic Grid Overlay if Grid Trading is active */}
+              {strategy === "grid_trading" && (
+                <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-around px-3 py-4 text-[9px] font-mono text-slate-500">
+                  <div className="border-b border-rose-500/30 flex justify-between text-rose-400"><span>Grid Sell #3</span><span>SELL LIMIT</span></div>
+                  <div className="border-b border-rose-500/30 flex justify-between text-rose-400"><span>Grid Sell #2</span><span>SELL LIMIT</span></div>
+                  <div className="border-b border-emerald-500/30 flex justify-between text-emerald-400"><span>Grid Buy #1</span><span>BUY LIMIT</span></div>
+                  <div className="border-b border-emerald-500/30 flex justify-between text-emerald-400"><span>Grid Buy #2</span><span>BUY LIMIT</span></div>
+                </div>
+              )}
+
+              <div className="h-72 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-20">
                 {candles.map((c, idx) => {
                   const isUp = c.close >= c.open;
                   const minPrice = Math.min(...candles.map(x => x.low));
@@ -388,7 +539,7 @@ export default function ZenBotProPage() {
               </div>
 
               {/* Volume Bars */}
-              <div className={`border-t pt-2 flex items-end justify-between gap-1.5 h-16 ${
+              <div className={`border-t pt-2 flex items-end justify-between gap-1.5 h-14 ${
                 isDarkMode ? "border-slate-800/80" : "border-slate-200"
               }`}>
                 {candles.map((c, i) => (
@@ -434,7 +585,7 @@ export default function ZenBotProPage() {
                   <tbody className="divide-y divide-slate-800/60">
                     {positions.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-900/40 transition">
-                        <td className="py-2.5 font-bold">{p.pair} <span className="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-500">3x</span></td>
+                        <td className="py-2.5 font-bold">{p.pair} <span className="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-500">{leverage}x</span></td>
                         <td className="py-2.5 text-slate-400">${p.entryPrice.toLocaleString()}</td>
                         <td className="py-2.5 font-bold">${p.currentPrice.toLocaleString()}</td>
                         <td className="py-2.5 font-bold text-emerald-500">
@@ -497,27 +648,29 @@ export default function ZenBotProPage() {
             }`}>
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-black">Simulador de Backtest</h3>
+                <h3 className="text-sm font-black">Configurador de Estratégia</h3>
               </div>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-mono">
-                90D Data Feed
+                90D Telemetria
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Estratégia Algorítmica</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  Estratégia Algorítmica (Troca automática de parâmetros)
+                </label>
                 <select
                   value={strategy}
-                  onChange={(e) => setStrategy(e.target.value as StrategyType)}
-                  className={`w-full border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 transition ${
-                    isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                  onChange={(e) => onStrategySelect(e.target.value as StrategyType)}
+                  className={`w-full border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer ${
+                    isDarkMode ? "bg-slate-900 border-emerald-500/50 text-white" : "bg-slate-50 border-emerald-500/50 text-slate-900"
                   }`}
                 >
-                  <option value="rsi_mean_reversion">RSI Mean Reversion (Reversão à Média HFT)</option>
-                  <option value="trend_following">SuperTrend Momentum (Seguidor de Tendência)</option>
-                  <option value="grid_trading">Grid Trading Neural (Acumulação em Faixa)</option>
-                  <option value="bollinger_scalp">Bollinger Volatility Breakout (Scalper)</option>
+                  <option value="rsi_mean_reversion">⚡ RSI Mean Reversion (Reversão à Média HFT)</option>
+                  <option value="trend_following">📈 SuperTrend Momentum (Seguidor de Tendência)</option>
+                  <option value="grid_trading">🕸️ Grid Trading Neural (Acumulação em Faixa)</option>
+                  <option value="bollinger_scalp">🎯 Bollinger Volatility Breakout (Scalper)</option>
                 </select>
               </div>
 
@@ -534,7 +687,7 @@ export default function ZenBotProPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Alavancagem</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Alavancagem Recomendada</label>
                   <select
                     value={leverage}
                     onChange={(e) => setLeverage(Number(e.target.value))}
@@ -543,8 +696,8 @@ export default function ZenBotProPage() {
                     }`}
                   >
                     <option value={1}>1x (Spot Seguro)</option>
-                    <option value={3}>3x (Recomendado)</option>
-                    <option value={5}>5x (Cross Margem)</option>
+                    <option value={3}>3x (Cross Margem)</option>
+                    <option value={5}>5x (Recomendado)</option>
                     <option value={10}>10x (Futuros HFT)</option>
                   </select>
                 </div>
@@ -552,7 +705,7 @@ export default function ZenBotProPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Stop Loss (%)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Stop Loss Alvo (%)</label>
                   <input
                     type="number"
                     step="0.5"
@@ -564,7 +717,7 @@ export default function ZenBotProPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Take Profit (%)</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Take Profit Alvo (%)</label>
                   <input
                     type="number"
                     step="0.5"
@@ -580,7 +733,7 @@ export default function ZenBotProPage() {
               <button
                 onClick={runBacktest}
                 disabled={isSimulating}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-[0.98]"
               >
                 {isSimulating ? (
                   <>
@@ -599,7 +752,7 @@ export default function ZenBotProPage() {
             {/* Scorecard */}
             <div className={`pt-3 border-t space-y-3 ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                Métricas Auditadas do Backtest
+                Métricas Auditadas do Backtest (90 Dias)
               </span>
               <div className="grid grid-cols-2 gap-2.5">
                 <div className={`p-3 rounded-xl border ${isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>

@@ -13,17 +13,6 @@
           fontFamily: {
             sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
             mono: ['"JetBrains Mono"', 'monospace']
-          },
-          colors: {
-            fintech: {
-              up: "#10b981",
-              down: "#f43f5e",
-              cyan: "#06b6d4",
-              amber: "#f59e0b",
-              darkBg: "#050811",
-              darkCard: "#0b1120",
-              darkBorder: "#1e293b"
-            }
           }
         }
       }
@@ -32,10 +21,17 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
-    body { font-family: "Plus Jakarta Sans", sans-serif; }
+    body { font-family: "Plus Jakarta Sans", sans-serif; transition: background-color 0.2s, color 0.2s; }
     .font-mono { font-family: "JetBrains Mono", monospace; }
 
-    /* Flash animations for real-time market updates */
+    /* Flash Animations */
+    @keyframes pulseField {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      50% { transform: scale(1.02); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(1); }
+    }
+    .field-updated { animation: pulseField 0.5s ease-out; }
+
     @keyframes flashGreen {
       0% { background-color: rgba(16, 185, 129, 0.4); }
       100% { background-color: transparent; }
@@ -47,15 +43,15 @@
     .flash-up { animation: flashGreen 0.6s ease-out; }
     .flash-down { animation: flashRed 0.6s ease-out; }
 
-    /* Custom high-finance scrollbar */
+    /* Custom scrollbars */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 9999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.45); }
 
-    /* Grid background pattern */
+    /* Grid pattern */
     .chart-grid {
-      background-size: 40px 40px;
+      background-size: 36px 36px;
       background-image: linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
                         linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
     }
@@ -63,8 +59,8 @@
 </head>
 <body class="bg-[#050811] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
 
-  <!-- Top Telemetry Header -->
-  <header id="main-header" class="border-b border-slate-800/80 bg-[#0b1120]/90 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200">
+  <!-- TOP TELEMETRY NAVBAR -->
+  <header id="main-header" class="border-b border-slate-800/80 bg-[#0b1120]/95 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200">
     <div class="max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
       
       <!-- Brand & Pair Selector -->
@@ -80,23 +76,23 @@
               </span>
               <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                LIVE WEBSOCKET
+                WEBSOCKET LIVE
               </span>
             </div>
-            <p class="text-[11px] text-slate-400">Binance Futures & CCXT Turnkey Engine</p>
+            <p class="text-[11px] text-slate-400" id="brand-sub">Binance & Coinbase Algorithmic Engine</p>
           </div>
         </div>
 
         <!-- Pair Navigation Pill -->
-        <div class="flex items-center bg-slate-900/80 dark:bg-slate-900/80 border border-slate-800 rounded-xl p-1 gap-1 header-pill">
+        <div id="pair-container" class="flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
           <button onclick="changePair('BTC/USDT')" id="btn-pair-BTC/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition">BTC/USDT</button>
           <button onclick="changePair('ETH/USDT')" id="btn-pair-ETH/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">ETH/USDT</button>
           <button onclick="changePair('SOL/USDT')" id="btn-pair-SOL/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">SOL/USDT</button>
         </div>
       </div>
 
-      <!-- Real-time Market Ticker Ribbon -->
-      <div class="hidden xl:flex items-center gap-6 text-xs bg-slate-900/50 dark:bg-slate-900/50 border border-slate-800/80 px-4 py-1.5 rounded-xl header-ribbon">
+      <!-- Real-Time Ticker Ribbon -->
+      <div id="ticker-ribbon" class="hidden xl:flex items-center gap-6 text-xs bg-slate-900/60 border border-slate-800/80 px-4 py-1.5 rounded-xl">
         <div class="flex items-center gap-2">
           <span class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Último Preço:</span>
           <span id="ticker-live-price" class="font-mono text-sm font-black text-white px-2 py-0.5 rounded transition">
@@ -119,14 +115,14 @@
         <div class="h-4 w-[1px] bg-slate-800"></div>
         <div>
           <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">Vol 24h:</span>
-          <span class="font-mono font-bold text-slate-200">$1,842.6M</span>
+          <span class="font-mono font-bold text-slate-200" id="ticker-vol">$1,842.6M</span>
         </div>
       </div>
 
       <!-- Actions & CTA Button -->
       <div class="flex items-center gap-2.5 w-full lg:w-auto justify-end">
         <!-- Light / Dark Mode Switcher -->
-        <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition border border-slate-800 w-9 h-9 flex items-center justify-center header-btn" title="Alternar Modo Claro / Escuro">
+        <button onclick="toggleTheme()" id="theme-btn" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition border border-slate-800 w-9 h-9 flex items-center justify-center" title="Alternar Modo Claro / Escuro">
           <i id="theme-icon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
         </button>
 
@@ -144,83 +140,106 @@
     </div>
   </header>
 
-  <!-- Main Trading Workspace Grid -->
+  <!-- Notification Banner when Strategy changes -->
+  <div id="strategy-alert" class="hidden bg-emerald-500/10 border-b border-emerald-500/20 px-6 py-2 text-center text-xs font-semibold text-emerald-400 transition-all">
+    <i class="fa-solid fa-circle-check mr-2"></i>
+    <span id="strategy-alert-text">Estratégia carregada com sucesso.</span>
+  </div>
+
+  <!-- MAIN WORKSPACE -->
   <main class="flex-1 max-w-[1800px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-    <!-- LEFT COLUMN: Live Candlestick Canvas & Order Book (8 cols) -->
+    <!-- LEFT COLUMN: Chart Canvas, Overlays & Positions (8 cols) -->
     <div class="lg:col-span-8 flex flex-col gap-5">
       
-      <!-- Interactive Candlestick Chart Card -->
-      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl relative overflow-hidden card-panel">
+      <!-- Chart Panel -->
+      <div class="theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+        
+        <!-- Chart Controls Header -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3.5 border-b border-slate-800/80 gap-3">
           <div class="flex items-center gap-3">
             <span class="text-sm font-black text-white flex items-center gap-2 card-title">
               <i class="fa-solid fa-chart-candlestick text-emerald-400"></i>
-              Feed de Preço em Tempo Real
+              Feed de Preço & Indicadores Ativos
             </span>
-            <span class="text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">1m | Heikin-Ashi</span>
+            <!-- Timeframe Pills -->
+            <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px] font-mono">
+              <button onclick="setTimeframe('1m')" id="tf-1m" class="tf-btn px-2 py-0.5 rounded font-bold bg-emerald-600 text-white">1m</button>
+              <button onclick="setTimeframe('5m')" id="tf-5m" class="tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">5m</button>
+              <button onclick="setTimeframe('15m')" id="tf-15m" class="tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">15m</button>
+              <button onclick="setTimeframe('1h')" id="tf-1h" class="tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">1h</button>
+              <button onclick="setTimeframe('1d')" id="tf-1d" class="tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white">1D</button>
+            </div>
           </div>
 
-          <!-- Indicator Toggles -->
-          <div class="flex items-center gap-1.5 text-xs flex-wrap">
-            <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-mono font-bold border border-cyan-500/20 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> EMA 20
-            </span>
-            <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono font-bold border border-amber-500/20 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> EMA 50
-            </span>
-            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono font-bold border border-purple-500/20">
-              RSI (14): <strong id="rsi-val">64.2</strong>
-            </span>
-            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold border border-emerald-500/20">
-              Sinal: <strong id="signal-badge">COMPRA FORTE</strong>
-            </span>
+          <!-- Dynamic Active Strategy Badges (Changes in Real-Time!) -->
+          <div class="flex items-center gap-1.5 text-xs flex-wrap font-mono" id="active-indicators-bar">
+            <!-- Injected by active strategy -->
           </div>
         </div>
 
-        <!-- Candlestick SVG & HTML Canvas with Real-Time Ticking Candle -->
-        <div class="mt-4 relative bg-[#070b14] rounded-xl p-4 border border-slate-800/80 overflow-hidden chart-grid chart-bg">
-          <!-- Price crosshair line -->
+        <!-- Strategy Description Sub-header -->
+        <div id="strategy-desc-banner" class="mt-3 p-3 rounded-xl bg-slate-900/70 border border-slate-800 text-xs flex items-center justify-between transition-colors">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-cyan-400"></i>
+            <span id="strategy-desc-text" class="text-slate-300">
+              <strong>RSI Mean Reversion:</strong> Identifica pontos de sobrecompra (>70) e sobrevenda (<30) para entradas de reversão estatística.
+            </span>
+          </div>
+          <span id="strategy-regime-badge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 whitespace-nowrap">
+            Modo: Reversão HFT
+          </span>
+        </div>
+
+        <!-- Interactive Candlestick Canvas & Overlays -->
+        <div class="mt-3 relative bg-[#070b14] rounded-xl p-4 border border-slate-800/80 overflow-hidden chart-grid chart-bg">
+          
+          <!-- Strategy Overlay Layer (Grid Lines / Bollinger / Trend Cloud) -->
+          <div id="strategy-overlay-layer" class="absolute inset-0 pointer-events-none z-10">
+            <!-- Dotted grid lines or bands rendered dynamically based on chosen strategy -->
+          </div>
+
+          <!-- Price Crosshair line -->
           <div class="absolute right-0 top-1/2 -translate-y-1/2 w-full border-b border-dashed border-slate-700/60 pointer-events-none z-0"></div>
-          <div id="live-price-tag" class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-emerald-500 text-white font-mono text-[10px] font-extrabold z-10 shadow-md">
+          <div id="live-price-tag" class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-mono text-xs font-black z-20 shadow-lg">
             $89,420.50
           </div>
 
           <!-- Candles Container -->
-          <div id="candles-track" class="h-80 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-10">
+          <div id="candles-track" class="h-72 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-20">
             <!-- Dynamic Candlesticks rendered via JS -->
           </div>
 
           <!-- Volume Sub-chart -->
-          <div class="border-t border-slate-800/80 pt-2 flex items-end justify-between gap-1.5 h-16" id="volume-track">
+          <div class="border-t border-slate-800/80 pt-2 flex items-end justify-between gap-1.5 h-14" id="volume-track">
             <!-- Dynamic Volume bars rendered via JS -->
           </div>
         </div>
 
-        <!-- Chart Bottom Telemetry Bar -->
+        <!-- Telemetry Status Bar -->
         <div class="mt-3 flex items-center justify-between text-[11px] text-slate-400 font-mono">
           <div class="flex items-center gap-4">
-            <span>Latência: <strong class="text-emerald-400">12ms</strong> (Binance Tokyo Edge)</span>
-            <span>Ordens Executadas Hoje: <strong class="text-slate-200">1.842</strong></span>
+            <span>Latência: <strong class="text-emerald-400">9ms</strong> (Binance Websocket API)</span>
+            <span>Ordens Analisadas: <strong class="text-slate-200">2.418</strong></span>
           </div>
-          <div class="flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Algoritmo em Execução Automática</span>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="active-strategy-label" class="text-emerald-400 font-bold">RSI Mean Reversion Ativo</span>
           </div>
         </div>
       </div>
 
-      <!-- Split Table: Open Positions & Live Trade Stream -->
+      <!-- Split Row: Positions Table + Real-Time Live Order Stream -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
         
-        <!-- Open Positions (7 cols) -->
-        <div class="md:col-span-7 bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel">
+        <!-- Positions (7 cols) -->
+        <div class="md:col-span-7 theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <span class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 card-title">
               <i class="fa-solid fa-layer-group text-emerald-400"></i> Posições Abertas (<span id="open-pos-count">2</span>)
             </span>
             <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              Lucro Total: +$520.50
+              PnL Total: +$520.50
             </span>
           </div>
 
@@ -231,13 +250,13 @@
                   <th class="pb-2">Ativo</th>
                   <th class="pb-2">Entrada</th>
                   <th class="pb-2">Atual</th>
-                  <th class="pb-2">PnL</th>
+                  <th class="pb-2">Lucro / PnL</th>
                   <th class="pb-2 text-right">Ação</th>
                 </tr>
               </thead>
               <tbody id="pos-tbody" class="divide-y divide-slate-800/60">
                 <tr id="pos-1" class="hover:bg-slate-900/40 transition">
-                  <td class="py-2.5 font-bold text-white">BTC/USDT <span class="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-400">3x</span></td>
+                  <td class="py-2.5 font-bold text-white">BTC/USDT <span id="pos-1-lev" class="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-400">5x</span></td>
                   <td class="py-2.5 text-slate-400">$87,850</td>
                   <td class="py-2.5 font-bold text-white" id="pos-1-cur">$89,420</td>
                   <td class="py-2.5 font-bold text-emerald-400" id="pos-1-pnl">+$235.50 (+5.36%)</td>
@@ -260,12 +279,12 @@
         </div>
 
         <!-- Live Trade Stream (5 cols) -->
-        <div class="md:col-span-5 bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel">
+        <div class="md:col-span-5 theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl">
           <div class="flex items-center justify-between pb-3 border-b border-slate-800">
             <span class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 card-title">
               <i class="fa-solid fa-satellite-dish text-cyan-400"></i> Fluxo de Ordens
             </span>
-            <span class="text-[10px] text-slate-400 font-mono">Live Feed</span>
+            <span class="text-[10px] text-slate-400 font-mono">Live Stream</span>
           </div>
 
           <div class="mt-2 overflow-hidden h-36 font-mono text-[11px]">
@@ -278,101 +297,104 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN: Backtest Engine & Risk Controls (4 cols) -->
+    <!-- RIGHT COLUMN: Fully Reactive Backtest Engine & Strategy Parameters (4 cols) -->
     <div class="lg:col-span-4 flex flex-col gap-5">
       
       <!-- Backtesting Simulation Engine Card -->
-      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4 card-panel">
+      <div class="theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+        
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-microchip text-emerald-400"></i>
-            <h3 class="text-sm font-black text-white card-title">Simulador de Backtest</h3>
+            <h3 class="text-sm font-black text-white card-title">Configurador de Estratégia</h3>
           </div>
           <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-            90D Data Feed
+            90D Telemetria
           </span>
         </div>
 
-        <!-- Strategy Inputs -->
-        <div class="space-y-3">
+        <!-- Strategy Inputs (CHANGES EVERYTHING DYNAMICALLY!) -->
+        <div class="space-y-3.5">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Estratégia Algorítmica</label>
-            <select id="strat-type" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500 transition input-control">
-              <option value="rsi">RSI Mean Reversion (Reversão à Média HFT)</option>
-              <option value="trend">SuperTrend Momentum (Seguidor de Tendência)</option>
-              <option value="grid">Grid Trading Neural (Acumulação em Faixa)</option>
-              <option value="bollinger">Bollinger Volatility Breakout (Scalper)</option>
+            <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">
+              Estratégia Algorítmica (Selecione para alternar parâmetros)
+            </label>
+            <select id="strat-type" onchange="handleStrategyChange(this.value)" class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition input-control cursor-pointer shadow-sm">
+              <option value="rsi">⚡ RSI Mean Reversion (Reversão à Média HFT)</option>
+              <option value="trend">📈 SuperTrend Momentum (Seguidor de Tendência)</option>
+              <option value="grid">🕸️ Grid Trading Neural (Acumulação em Faixa)</option>
+              <option value="bollinger">🎯 Bollinger Volatility Breakout (Scalper)</option>
             </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Capital Inicial ($)</label>
-              <input type="number" id="capital-input" value="10000" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
+              <input type="number" id="capital-input" value="10000" oninput="recalcMetrics()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Alavancagem</label>
-              <select class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
-                <option>1x (Spot Seguro)</option>
-                <option selected>3x (Recomendado)</option>
-                <option>5x (Cross Margem)</option>
-                <option>10x (Futuros HFT)</option>
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Alavancagem Recomendada</label>
+              <select id="leverage-select" onchange="recalcMetrics()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
+                <option value="1">1x (Spot Seguro)</option>
+                <option value="3">3x (Cross Margem)</option>
+                <option value="5" selected>5x (Recomendado)</option>
+                <option value="10">10x (Futuros HFT)</option>
               </select>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Stop Loss (%)</label>
-              <input type="number" step="0.5" value="2.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Stop Loss Alvo (%)</label>
+              <input type="number" step="0.5" id="sl-input" value="1.8" oninput="recalcMetrics()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Take Profit (%)</label>
-              <input type="number" step="0.5" value="6.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Take Profit Alvo (%)</label>
+              <input type="number" step="0.5" id="tp-input" value="4.2" oninput="recalcMetrics()" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
           </div>
 
           <!-- Execute Backtest Button -->
-          <button onclick="runBacktest()" id="btn-backtest" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98]">
+          <button onclick="runBacktest()" id="btn-backtest" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 active:scale-[0.98]">
             <i class="fa-solid fa-play text-xs"></i>
             <span>Executar Simulação de Estratégia</span>
           </button>
         </div>
 
-        <!-- Strategy Telemetry Scorecard -->
+        <!-- Strategy Telemetry Scorecard (Dynamically updates with strategy!) -->
         <div class="pt-3 border-t border-slate-800 space-y-3">
           <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-            Métricas Auditadas do Backtest
+            Métricas Auditadas do Backtest (90 Dias)
           </span>
 
           <div class="grid grid-cols-2 gap-2.5">
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
+            <div id="card-profit" class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card transition-all">
               <span class="text-[10px] text-slate-400 block font-medium">Lucro Líquido</span>
               <span class="text-sm font-mono font-black text-emerald-400" id="stat-profit">+$4,285.50 (+42.8%)</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
+            <div id="card-winrate" class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card transition-all">
               <span class="text-[10px] text-slate-400 block font-medium">Taxa de Acerto</span>
-              <span class="text-sm font-mono font-black text-white" id="stat-winrate">68.4%</span>
+              <span class="text-sm font-mono font-black text-white" id="stat-winrate">71.4%</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
+            <div id="card-factor" class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card transition-all">
               <span class="text-[10px] text-slate-400 block font-medium">Fator de Lucro</span>
-              <span class="text-sm font-mono font-black text-emerald-400" id="stat-factor">2.14x</span>
+              <span class="text-sm font-mono font-black text-emerald-400" id="stat-factor">2.35x</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
+            <div id="card-drawdown" class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card transition-all">
               <span class="text-[10px] text-slate-400 block font-medium">Max Drawdown</span>
-              <span class="text-sm font-mono font-black text-rose-400" id="stat-drawdown">-7.8%</span>
+              <span class="text-sm font-mono font-black text-rose-400" id="stat-drawdown">-6.2%</span>
             </div>
           </div>
 
           <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono flex items-center justify-between font-bold">
-            <span>Sharpe Ratio: <strong id="stat-sharpe" class="text-white">1.92</strong></span>
-            <span>Operações: <strong id="stat-trades" class="text-white">142</strong></span>
+            <span>Sharpe Ratio: <strong id="stat-sharpe" class="text-white">2.08</strong></span>
+            <span>Operações: <strong id="stat-trades" class="text-white">164</strong></span>
           </div>
         </div>
       </div>
 
-      <!-- Security & API Connectivity Card -->
-      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-4 shadow-xl flex items-center gap-3.5 card-panel">
+      <!-- Security Card -->
+      <div class="theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-4 shadow-xl flex items-center gap-3.5">
         <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-lg">
           <i class="fa-solid fa-shield-halved"></i>
         </div>
@@ -395,20 +417,192 @@
     let currentPair = "BTC/USDT";
     let isDarkMode = true;
     let isBotActive = true;
-    let basePrice = 89420.50;
+    let currentTimeframe = "1m";
 
-    // Pairs Configuration
+    // Strategies Configuration Matrix
+    const strategies = {
+      rsi: {
+        name: "RSI Mean Reversion (Reversão à Média HFT)",
+        shortName: "RSI Reversion",
+        regime: "Modo: Reversão HFT",
+        desc: "<strong>RSI Mean Reversion:</strong> Identifica pontos de sobrecompra (>70) e sobrevenda (<30) para entradas de reversão estatística de alta frequência.",
+        defaultSL: 1.8,
+        defaultTP: 4.2,
+        defaultLev: "5",
+        winRate: 71.4,
+        profitFactor: 2.35,
+        drawdown: -6.2,
+        sharpe: 2.08,
+        trades: 164,
+        roiPct: 44.8,
+        indicatorsHtml: `
+          <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">RSI (14): <strong>31.4 (Sobrevenda)</strong></span>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">Sinal: <strong>COMPRA FORTE</strong></span>
+        `,
+        renderOverlay: function(container, minP, maxP) {
+          container.innerHTML = `
+            <div class="absolute w-full top-1/4 border-b border-dashed border-purple-500/40 flex justify-between px-3 text-[9px] text-purple-400"><span>Sobrecompra (RSI 70)</span><span>Zona de Saída</span></div>
+            <div class="absolute w-full bottom-1/4 border-b border-dashed border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400"><span>Sobrevenda (RSI 30)</span><span>Zona de Compra</span></div>
+          `;
+        }
+      },
+      trend: {
+        name: "SuperTrend Momentum (Seguidor de Tendência)",
+        shortName: "SuperTrend Momentum",
+        regime: "Modo: Tendência Parabólica",
+        desc: "<strong>SuperTrend Momentum:</strong> Rastreia rompimentos direcionais usando ATR e cruzamento das médias móveis exponenciais EMA 20 e EMA 50.",
+        defaultSL: 4.2,
+        defaultTP: 12.5,
+        defaultLev: "3",
+        winRate: 58.2,
+        profitFactor: 2.85,
+        drawdown: -8.8,
+        sharpe: 1.94,
+        trades: 98,
+        roiPct: 56.4,
+        indicatorsHtml: `
+          <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">EMA 20 > EMA 50 (Alta)</span>
+          <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">SuperTrend: <strong>BULLISH</strong></span>
+        `,
+        renderOverlay: function(container, minP, maxP) {
+          container.innerHTML = `
+            <div class="absolute w-full bottom-[35%] h-12 bg-gradient-to-t from-emerald-500/10 to-transparent border-t border-emerald-500/30 flex justify-between px-3 text-[9px] text-emerald-400"><span>Nuvem SuperTrend de Suporte</span><span>Trailing Stop: Ativo</span></div>
+          `;
+        }
+      },
+      grid: {
+        name: "Grid Trading Neural (Acumulação em Faixa)",
+        shortName: "Grid Accumulator",
+        regime: "Modo: Range Arbitragem",
+        desc: "<strong>Grid Trading Neural:</strong> Espalha uma matriz de ordens limite de compra e venda a cada $150 de variação para lucrar com volatilidade lateral.",
+        defaultSL: 7.5,
+        defaultTP: 1.6,
+        defaultLev: "1",
+        winRate: 89.2,
+        profitFactor: 1.95,
+        drawdown: -4.5,
+        sharpe: 2.25,
+        trades: 284,
+        roiPct: 38.6,
+        indicatorsHtml: `
+          <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">Matriz Grid: <strong>16 Ordens</strong></span>
+          <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">Espaçamento: <strong>0.35%</strong></span>
+        `,
+        renderOverlay: function(container, minP, maxP) {
+          container.innerHTML = `
+            <div class="absolute w-full top-[20%] border-b border-rose-500/40 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #3: $89,750</span><span>SELL LIMIT</span></div>
+            <div class="absolute w-full top-[35%] border-b border-rose-500/40 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #2: $89,550</span><span>SELL LIMIT</span></div>
+            <div class="absolute w-full bottom-[35%] border-b border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #1: $89,150</span><span>BUY LIMIT</span></div>
+            <div class="absolute w-full bottom-[20%] border-b border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #2: $88,950</span><span>BUY LIMIT</span></div>
+          `;
+        }
+      },
+      bollinger: {
+        name: "Bollinger Volatility Breakout (Scalper)",
+        shortName: "Bollinger Scalp",
+        regime: "Modo: Volatilidade Breakout",
+        desc: "<strong>Bollinger Volatility Breakout:</strong> Monitora o estreitamento das bandas de 2.0 desvios padrões e entra a favor do rompimento súbito de volume.",
+        defaultSL: 2.5,
+        defaultTP: 7.0,
+        defaultLev: "3",
+        winRate: 64.5,
+        profitFactor: 2.22,
+        drawdown: -7.1,
+        sharpe: 1.88,
+        trades: 145,
+        roiPct: 48.2,
+        indicatorsHtml: `
+          <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">Banda Superior: <strong>$89,820</strong></span>
+          <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">Banda Inferior: <strong>$87,240</strong></span>
+        `,
+        renderOverlay: function(container, minP, maxP) {
+          container.innerHTML = `
+            <div class="absolute w-full top-[15%] h-[70%] bg-blue-500/[0.03] border-y border-blue-500/30 flex flex-col justify-between px-3 py-1 text-[9px] text-blue-400">
+              <span>Banda Superior (2.0σ)</span>
+              <span>Banda Inferior (2.0σ)</span>
+            </div>
+          `;
+        }
+      }
+    };
+
+    // Pair Config
     const pairConfig = {
       "BTC/USDT": { base: 89420.50, step: 25.0, count: 14, min: 86210, max: 89850 },
       "ETH/USDT": { base: 3568.20, step: 2.5, count: 14, min: 3410, max: 3620 },
       "SOL/USDT": { base: 212.80, step: 0.4, count: 14, min: 194, max: 218 }
     };
 
-    // Generate Initial Candlestick dataset
     let candles = [];
+
+    // KEY FUNCTION: WHEN USER CHANGES STRATEGY DROPDOWN
+    function handleStrategyChange(stratKey) {
+      const s = strategies[stratKey] || strategies.rsi;
+      
+      // 1. Show flash alert banner
+      const alertEl = document.getElementById("strategy-alert");
+      const alertTxt = document.getElementById("strategy-alert-text");
+      alertTxt.innerHTML = `Estratégia carregada: <strong>${s.name}</strong>. Parâmetros e overlays reconfigurados!`;
+      alertEl.classList.remove("hidden");
+      setTimeout(() => alertEl.classList.add("hidden"), 3000);
+
+      // 2. Automatically update Stop Loss & Take Profit with pulse animation
+      const slInput = document.getElementById("sl-input");
+      const tpInput = document.getElementById("tp-input");
+      const levSelect = document.getElementById("leverage-select");
+
+      slInput.value = s.defaultSL;
+      tpInput.value = s.defaultTP;
+      levSelect.value = s.defaultLev;
+
+      [slInput, tpInput, levSelect].forEach(el => {
+        el.classList.add("field-updated");
+        setTimeout(() => el.classList.remove("field-updated"), 600);
+      });
+
+      // 3. Update Strategy Description & Badges
+      document.getElementById("strategy-desc-text").innerHTML = s.desc;
+      document.getElementById("strategy-regime-badge").innerText = s.regime;
+      document.getElementById("active-strategy-label").innerText = `${s.shortName} Ativo`;
+      document.getElementById("active-indicators-bar").innerHTML = s.indicatorsHtml;
+
+      // 4. Update Leverage in position row
+      const posLev = document.getElementById("pos-1-lev");
+      if (posLev) posLev.innerText = `${s.defaultLev}x`;
+
+      // 5. Update Scorecard with realistic strategy profile
+      recalcMetrics();
+
+      // 6. Redraw chart with strategy-specific overlays
+      renderChart();
+    }
+
+    function recalcMetrics() {
+      const stratKey = document.getElementById("strat-type").value;
+      const s = strategies[stratKey] || strategies.rsi;
+      const capital = parseFloat(document.getElementById("capital-input").value) || 10000;
+
+      const profit = Math.round(capital * (s.roiPct / 100) * 100) / 100;
+      
+      document.getElementById("stat-profit").innerText = `+$${profit.toLocaleString()} (+${s.roiPct}%)`;
+      document.getElementById("stat-winrate").innerText = `${s.winRate}%`;
+      document.getElementById("stat-factor").innerText = `${s.profitFactor}x`;
+      document.getElementById("stat-drawdown").innerText = `${s.drawdown}%`;
+      document.getElementById("stat-sharpe").innerText = s.sharpe;
+      document.getElementById("stat-trades").innerText = s.trades;
+
+      // Visual pulse on scorecard
+      ["card-profit", "card-winrate", "card-factor", "card-drawdown"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.add("field-updated");
+          setTimeout(() => el.classList.remove("field-updated"), 500);
+        }
+      });
+    }
+
     function initCandles() {
       const cfg = pairConfig[currentPair];
-      basePrice = cfg.base;
       candles = [];
       let p = cfg.base - (cfg.step * 10);
       
@@ -434,12 +628,20 @@
     function renderChart() {
       const track = document.getElementById("candles-track");
       const volTrack = document.getElementById("volume-track");
+      const overlayLayer = document.getElementById("strategy-overlay-layer");
       track.innerHTML = "";
       volTrack.innerHTML = "";
 
       const minPrice = Math.min(...candles.map(c => c.low));
       const maxPrice = Math.max(...candles.map(c => c.high));
       const range = maxPrice - minPrice || 1;
+
+      // Update overlay for active strategy
+      const stratKey = document.getElementById("strat-type").value;
+      const s = strategies[stratKey] || strategies.rsi;
+      if (s.renderOverlay) {
+        s.renderOverlay(overlayLayer, minPrice, maxPrice);
+      }
 
       // Update price tag
       const last = candles[candles.length - 1];
@@ -465,7 +667,7 @@
           ${sigHtml}
           <div class="w-full relative flex justify-center items-center h-full">
             <div class="absolute w-[1.5px] ${isUp ? 'bg-emerald-400' : 'bg-rose-400'}" style="top: ${wickTop}%; height: ${wickH}%;"></div>
-            <div id="candle-body-${idx}" class="absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500/30' : 'bg-rose-400 shadow-sm shadow-rose-500/30'}" style="top: ${topPct}%; height: ${bodyH}%;"></div>
+            <div class="absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500/30' : 'bg-rose-400 shadow-sm shadow-rose-500/30'}" style="top: ${topPct}%; height: ${bodyH}%;"></div>
           </div>
           <span class="text-[9px] text-slate-400 mt-2 font-mono">${c.time}</span>
         `;
@@ -526,7 +728,7 @@
       const size = (0.05 + Math.random() * 0.8).toFixed(3);
       
       const row = document.createElement("div");
-      row.className = `flex items-center justify-between py-0.5 px-2 rounded text-[10px] animate-pulse ${isBuy ? 'bg-emerald-500/5 text-emerald-400' : 'bg-rose-500/5 text-rose-400'}`;
+      row.className = `flex items-center justify-between py-0.5 px-2 rounded text-[10px] animate-pulse ${isBuy ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`;
       row.innerHTML = `
         <span class="text-slate-400">${timeStr}</span>
         <span class="font-bold">${isBuy ? 'COMPRA' : 'VENDA'}</span>
@@ -538,6 +740,15 @@
       if (streamContainer.children.length > 5) {
         streamContainer.removeChild(streamContainer.lastChild);
       }
+    }
+
+    function setTimeframe(tf) {
+      currentTimeframe = tf;
+      document.querySelectorAll(".tf-btn").forEach(b => {
+        b.className = "tf-btn px-2 py-0.5 rounded text-slate-400 hover:text-white transition";
+      });
+      document.getElementById(`tf-${tf}`).className = "tf-btn px-2 py-0.5 rounded font-bold bg-emerald-600 text-white transition";
+      initCandles();
     }
 
     function changePair(pair) {
@@ -576,46 +787,42 @@
       btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i><span>Simulando 90 Dias de Mercado...</span>`;
 
       setTimeout(() => {
-        const capital = parseFloat(document.getElementById("capital-input").value) || 10000;
-        const profit = Math.round(capital * (0.34 + Math.random() * 0.16) * 100) / 100;
-        const pct = Math.round((profit / capital) * 10000) / 100;
-
-        document.getElementById("stat-profit").innerText = `+$${profit.toLocaleString()} (+${pct}%)`;
-        document.getElementById("stat-winrate").innerText = `${(66 + Math.random() * 7).toFixed(1)}%`;
-        document.getElementById("stat-factor").innerText = `${(2.05 + Math.random() * 0.4).toFixed(2)}x`;
-        document.getElementById("stat-drawdown").innerText = `-${(6.2 + Math.random() * 2.5).toFixed(1)}%`;
-        document.getElementById("stat-sharpe").innerText = (1.85 + Math.random() * 0.3).toFixed(2);
-        document.getElementById("stat-trades").innerText = Math.floor(130 + Math.random() * 30);
-
+        recalcMetrics();
         btn.disabled = false;
         btn.innerHTML = `<i class="fa-solid fa-play text-xs"></i><span>Executar Simulação de Estratégia</span>`;
       }, 500);
     }
 
-    // COMPLETE THEME SWITCHER (Dark & Light)
+    // THEME TOGGLE (Fixed 100% of header and all panels!)
     function toggleTheme() {
       isDarkMode = !isDarkMode;
       const html = document.documentElement;
       const themeIcon = document.getElementById("theme-icon");
       const header = document.getElementById("main-header");
       const brandTitle = document.getElementById("brand-title");
+      const pairCont = document.getElementById("pair-container");
+      const ribbon = document.getElementById("ticker-ribbon");
+      const themeBtn = document.getElementById("theme-btn");
 
       if (isDarkMode) {
         html.classList.add("dark");
         document.body.className = "bg-[#050811] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200";
-        header.className = "border-b border-slate-800/80 bg-[#0b1120]/90 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200";
+        header.className = "border-b border-slate-800/80 bg-[#0b1120]/95 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200";
         brandTitle.className = "text-base font-black tracking-tight text-white";
         themeIcon.className = "fa-solid fa-sun text-amber-400 text-sm";
-        
-        document.querySelectorAll(".card-panel").forEach(c => {
-          c.className = "bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel";
+        pairCont.className = "flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1";
+        ribbon.className = "hidden xl:flex items-center gap-6 text-xs bg-slate-900/60 border border-slate-800/80 px-4 py-1.5 rounded-xl";
+        themeBtn.className = "p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition border border-slate-800 w-9 h-9 flex items-center justify-center";
+
+        document.querySelectorAll(".theme-card").forEach(c => {
+          c.className = "theme-card bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl relative overflow-hidden";
         });
         document.querySelectorAll(".card-title").forEach(t => t.className = "text-sm font-black text-white flex items-center gap-2 card-title");
         document.querySelectorAll(".input-control").forEach(i => {
           i.className = "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control";
         });
         document.querySelectorAll(".sub-card").forEach(sc => {
-          sc.className = "p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card";
+          sc.className = "p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card transition-all";
         });
       } else {
         html.classList.remove("dark");
@@ -623,23 +830,26 @@
         header.className = "border-b border-slate-200 bg-white/95 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 shadow-sm transition-colors duration-200";
         brandTitle.className = "text-base font-black tracking-tight text-slate-900";
         themeIcon.className = "fa-solid fa-moon text-slate-600 text-sm";
+        pairCont.className = "flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1";
+        ribbon.className = "hidden xl:flex items-center gap-6 text-xs bg-slate-100 border border-slate-200 px-4 py-1.5 rounded-xl";
+        themeBtn.className = "p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200 w-9 h-9 flex items-center justify-center";
 
-        document.querySelectorAll(".card-panel").forEach(c => {
-          c.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm card-panel";
+        document.querySelectorAll(".theme-card").forEach(c => {
+          c.className = "theme-card bg-white border border-slate-200 rounded-2xl p-5 shadow-sm relative overflow-hidden";
         });
         document.querySelectorAll(".card-title").forEach(t => t.className = "text-sm font-black text-slate-900 flex items-center gap-2 card-title");
         document.querySelectorAll(".input-control").forEach(i => {
           i.className = "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-emerald-500 input-control";
         });
         document.querySelectorAll(".sub-card").forEach(sc => {
-          sc.className = "p-3 rounded-xl bg-slate-50 border border-slate-200 sub-card";
+          sc.className = "p-3 rounded-xl bg-slate-50 border border-slate-200 sub-card transition-all";
         });
       }
     }
 
-    // Bootstrap
+    // Initialize
     initCandles();
-    // Seed initial trade stream
+    handleStrategyChange("rsi");
     for(let i = 0; i < 4; i++) {
       addTradeStreamRow(89420 + (Math.random() - 0.5) * 50, Math.random() > 0.4);
     }
