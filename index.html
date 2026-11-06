@@ -206,14 +206,28 @@
           </div>
 
           <!-- Candles Container -->
-          <div id="candles-track" class="h-72 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-20">
+          <div id="candles-track" class="h-64 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-20">
             <!-- Dynamic Candlesticks rendered via JS -->
           </div>
 
-          <!-- Volume Sub-chart -->
-          <div class="border-t border-slate-800/80 pt-2 flex items-end justify-between gap-1.5 h-14" id="volume-track">
-            <!-- Dynamic Volume bars rendered via JS -->
+          <!-- DEDICATED INDICATOR & OSCILLATOR SUB-CHART (RSI, Grid, Bollinger, Volume) -->
+          <div class="border-t border-slate-800/80 pt-2 mt-2">
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 pb-1.5" id="subchart-header">
+              <span id="subchart-title" class="flex items-center gap-1.5 font-bold text-purple-400">
+                <i class="fa-solid fa-wave-square"></i> Oscilador RSI (14): <span id="subchart-val">31.4</span>
+              </span>
+              <div id="subchart-levels" class="flex items-center gap-3 text-[10px]">
+                <span class="text-rose-400">Sobrecompra: 70</span>
+                <span class="text-emerald-400">Sobrevenda: 30</span>
+              </div>
+            </div>
+            
+            <!-- Dynamic Sub-Chart Visualization (SVG Oscillator Wave) -->
+            <div id="subchart-body" class="h-20 w-full relative flex items-end">
+              <!-- Rendered via JS -->
+            </div>
           </div>
+
         </div>
 
         <!-- Telemetry Status Bar -->
@@ -250,7 +264,7 @@
                   <th class="pb-2">Ativo</th>
                   <th class="pb-2">Entrada</th>
                   <th class="pb-2">Atual</th>
-                  <th class="pb-2">Lucro / PnL</th>
+                  <th class="pb-2">PnL</th>
                   <th class="pb-2 text-right">Ação</th>
                 </tr>
               </thead>
@@ -297,7 +311,7 @@
       </div>
     </div>
 
-    <!-- RIGHT COLUMN: Fully Reactive Backtest Engine & Strategy Parameters (4 cols) -->
+    <!-- RIGHT COLUMN: Interactive Strategy Cards & Backtest Engine (4 cols) -->
     <div class="lg:col-span-4 flex flex-col gap-5">
       
       <!-- Backtesting Simulation Engine Card -->
@@ -313,20 +327,44 @@
           </span>
         </div>
 
-        <!-- Strategy Inputs (CHANGES EVERYTHING DYNAMICALLY!) -->
-        <div class="space-y-3.5">
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">
-              Estratégia Algorítmica (Selecione para alternar parâmetros)
-            </label>
-            <select id="strat-type" onchange="handleStrategyChange(this.value)" class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 transition input-control cursor-pointer shadow-sm">
-              <option value="rsi">⚡ RSI Mean Reversion (Reversão à Média HFT)</option>
-              <option value="trend">📈 SuperTrend Momentum (Seguidor de Tendência)</option>
-              <option value="grid">🕸️ Grid Trading Neural (Acumulação em Faixa)</option>
-              <option value="bollinger">🎯 Bollinger Volatility Breakout (Scalper)</option>
-            </select>
-          </div>
+        <!-- INTERACTIVE STRATEGY CARDS (CLICK TO ACTIVATE!) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold text-slate-300 input-label">
+            Escolha a Estratégia (Clique para ativar):
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="handleStrategyChange('rsi')" id="card-btn-rsi" class="strat-btn p-2.5 rounded-xl border border-purple-500/60 bg-purple-500/10 text-left transition hover:scale-[1.02] shadow-sm">
+              <div class="flex items-center gap-1.5 text-xs font-black text-purple-300">
+                <i class="fa-solid fa-bolt text-purple-400"></i> RSI Reversion
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">HFT Scalp • 5x • 71% Win</p>
+            </button>
 
+            <button onclick="handleStrategyChange('trend')" id="card-btn-trend" class="strat-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-left transition hover:scale-[1.02] shadow-sm">
+              <div class="flex items-center gap-1.5 text-xs font-black text-cyan-400">
+                <i class="fa-solid fa-chart-line text-cyan-400"></i> SuperTrend
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Trend Break • 3x • 58% Win</p>
+            </button>
+
+            <button onclick="handleStrategyChange('grid')" id="card-btn-grid" class="strat-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-left transition hover:scale-[1.02] shadow-sm">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-400">
+                <i class="fa-solid fa-cubes text-amber-400"></i> Grid Neural
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Range Accum • 1x • 89% Win</p>
+            </button>
+
+            <button onclick="handleStrategyChange('bollinger')" id="card-btn-bollinger" class="strat-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-left transition hover:scale-[1.02] shadow-sm">
+              <div class="flex items-center gap-1.5 text-xs font-black text-blue-400">
+                <i class="fa-solid fa-bullseye text-blue-400"></i> Bollinger
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Volatility • 3x • 64% Win</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Strategy Inputs (Auto-populated with visual flash!) -->
+        <div class="space-y-3.5 pt-1">
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Capital Inicial ($)</label>
@@ -418,6 +456,7 @@
     let isDarkMode = true;
     let isBotActive = true;
     let currentTimeframe = "1m";
+    let activeStrategyKey = "rsi";
 
     // Strategies Configuration Matrix
     const strategies = {
@@ -435,11 +474,30 @@
         sharpe: 2.08,
         trades: 164,
         roiPct: 44.8,
+        color: "purple",
         indicatorsHtml: `
           <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">RSI (14): <strong>31.4 (Sobrevenda)</strong></span>
           <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">Sinal: <strong>COMPRA FORTE</strong></span>
         `,
-        renderOverlay: function(container, minP, maxP) {
+        renderSubchart: function(container) {
+          // Render Real Oscillating RSI Wave with 70 and 30 dashed lines
+          container.innerHTML = `
+            <svg class="w-full h-full" viewBox="0 0 400 60" preserveAspectRatio="none">
+              <!-- Overbought & Oversold horizontal reference lines -->
+              <line x1="0" y1="18" x2="400" y2="18" stroke="rgba(244, 63, 94, 0.4)" stroke-dasharray="4,4" stroke-width="1" />
+              <line x1="0" y1="42" x2="400" y2="42" stroke="rgba(16, 185, 129, 0.4)" stroke-dasharray="4,4" stroke-width="1" />
+              <!-- RSI 14-period smoothed purple polyline -->
+              <path d="M 0,38 Q 30,52 60,46 T 120,48 T 180,24 T 240,28 T 300,50 T 360,45 L 400,44" fill="none" stroke="#a855f7" stroke-width="2" />
+              <!-- Current RSI Beacon dot -->
+              <circle cx="400" cy="44" r="3.5" fill="#a855f7" class="animate-ping" />
+              <circle cx="400" cy="44" r="3" fill="#ffffff" />
+            </svg>
+          `;
+          document.getElementById("subchart-title").innerHTML = `<i class="fa-solid fa-wave-square"></i> Oscilador RSI (14): <span id="subchart-val">31.4</span>`;
+          document.getElementById("subchart-title").className = "flex items-center gap-1.5 font-bold text-purple-400";
+          document.getElementById("subchart-levels").innerHTML = `<span class="text-rose-400">Sobrecompra: 70</span><span class="text-emerald-400">Sobrevenda: 30</span>`;
+        },
+        renderOverlay: function(container) {
           container.innerHTML = `
             <div class="absolute w-full top-1/4 border-b border-dashed border-purple-500/40 flex justify-between px-3 text-[9px] text-purple-400"><span>Sobrecompra (RSI 70)</span><span>Zona de Saída</span></div>
             <div class="absolute w-full bottom-1/4 border-b border-dashed border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400"><span>Sobrevenda (RSI 30)</span><span>Zona de Compra</span></div>
@@ -460,13 +518,34 @@
         sharpe: 1.94,
         trades: 98,
         roiPct: 56.4,
+        color: "cyan",
         indicatorsHtml: `
           <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">EMA 20 > EMA 50 (Alta)</span>
           <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">SuperTrend: <strong>BULLISH</strong></span>
         `,
-        renderOverlay: function(container, minP, maxP) {
+        renderSubchart: function(container) {
+          // Render Momentum MACD/Trend Histogram
           container.innerHTML = `
-            <div class="absolute w-full bottom-[35%] h-12 bg-gradient-to-t from-emerald-500/10 to-transparent border-t border-emerald-500/30 flex justify-between px-3 text-[9px] text-emerald-400"><span>Nuvem SuperTrend de Suporte</span><span>Trailing Stop: Ativo</span></div>
+            <div class="h-full w-full flex items-end justify-between gap-1">
+              <div class="flex-1 bg-emerald-500/30 rounded-t h-[30%]"></div>
+              <div class="flex-1 bg-emerald-500/40 rounded-t h-[45%]"></div>
+              <div class="flex-1 bg-emerald-500/60 rounded-t h-[65%]"></div>
+              <div class="flex-1 bg-emerald-500/80 rounded-t h-[80%]"></div>
+              <div class="flex-1 bg-emerald-500 rounded-t h-[95%]"></div>
+              <div class="flex-1 bg-emerald-500/80 rounded-t h-[75%]"></div>
+              <div class="flex-1 bg-emerald-500/50 rounded-t h-[50%]"></div>
+              <div class="flex-1 bg-rose-500/40 rounded-t h-[20%]"></div>
+              <div class="flex-1 bg-emerald-500/70 rounded-t h-[60%]"></div>
+              <div class="flex-1 bg-emerald-500 rounded-t h-[90%]"></div>
+            </div>
+          `;
+          document.getElementById("subchart-title").innerHTML = `<i class="fa-solid fa-chart-simple"></i> Histograma de Momentum SuperTrend`;
+          document.getElementById("subchart-title").className = "flex items-center gap-1.5 font-bold text-cyan-400";
+          document.getElementById("subchart-levels").innerHTML = `<span class="text-emerald-400 font-bold">Impulso Comprador: Forte</span>`;
+        },
+        renderOverlay: function(container) {
+          container.innerHTML = `
+            <div class="absolute w-full bottom-[35%] h-12 bg-gradient-to-t from-emerald-500/10 to-transparent border-t border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Linha SuperTrend de Suporte: $88,200</span><span>TRAILING STOP ATIVO</span></div>
           `;
         }
       },
@@ -484,16 +563,29 @@
         sharpe: 2.25,
         trades: 284,
         roiPct: 38.6,
+        color: "amber",
         indicatorsHtml: `
           <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">Matriz Grid: <strong>16 Ordens</strong></span>
           <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">Espaçamento: <strong>0.35%</strong></span>
         `,
-        renderOverlay: function(container, minP, maxP) {
+        renderSubchart: function(container) {
+          // Render Order Book Grid Depth
           container.innerHTML = `
-            <div class="absolute w-full top-[20%] border-b border-rose-500/40 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #3: $89,750</span><span>SELL LIMIT</span></div>
-            <div class="absolute w-full top-[35%] border-b border-rose-500/40 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #2: $89,550</span><span>SELL LIMIT</span></div>
-            <div class="absolute w-full bottom-[35%] border-b border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #1: $89,150</span><span>BUY LIMIT</span></div>
-            <div class="absolute w-full bottom-[20%] border-b border-emerald-500/40 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #2: $88,950</span><span>BUY LIMIT</span></div>
+            <div class="h-full w-full flex items-center justify-between text-[10px] font-mono gap-2">
+              <div class="flex-1 bg-emerald-500/10 border border-emerald-500/20 p-2 rounded text-emerald-400 text-center">8 Compras Armadas ($88.4k - $89.2k)</div>
+              <div class="flex-1 bg-rose-500/10 border border-rose-500/20 p-2 rounded text-rose-400 text-center">8 Vendas Armadas ($89.5k - $90.3k)</div>
+            </div>
+          `;
+          document.getElementById("subchart-title").innerHTML = `<i class="fa-solid fa-cubes"></i> Matriz Neural de Ordens Grid`;
+          document.getElementById("subchart-title").className = "flex items-center gap-1.5 font-bold text-amber-400";
+          document.getElementById("subchart-levels").innerHTML = `<span class="text-slate-300">Arbitragem Ativa</span>`;
+        },
+        renderOverlay: function(container) {
+          container.innerHTML = `
+            <div class="absolute w-full top-[18%] border-b border-rose-500/50 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #3: $89,750</span><span>SELL LIMIT</span></div>
+            <div class="absolute w-full top-[32%] border-b border-rose-500/50 flex justify-between px-3 text-[9px] text-rose-400 font-mono"><span>Grid Venda #2: $89,550</span><span>SELL LIMIT</span></div>
+            <div class="absolute w-full bottom-[32%] border-b border-emerald-500/50 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #1: $89,150</span><span>BUY LIMIT</span></div>
+            <div class="absolute w-full bottom-[18%] border-b border-emerald-500/50 flex justify-between px-3 text-[9px] text-emerald-400 font-mono"><span>Grid Compra #2: $88,950</span><span>BUY LIMIT</span></div>
           `;
         }
       },
@@ -511,15 +603,26 @@
         sharpe: 1.88,
         trades: 145,
         roiPct: 48.2,
+        color: "blue",
         indicatorsHtml: `
           <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">Banda Superior: <strong>$89,820</strong></span>
           <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">Banda Inferior: <strong>$87,240</strong></span>
         `,
-        renderOverlay: function(container, minP, maxP) {
+        renderSubchart: function(container) {
           container.innerHTML = `
-            <div class="absolute w-full top-[15%] h-[70%] bg-blue-500/[0.03] border-y border-blue-500/30 flex flex-col justify-between px-3 py-1 text-[9px] text-blue-400">
-              <span>Banda Superior (2.0σ)</span>
-              <span>Banda Inferior (2.0σ)</span>
+            <div class="h-full w-full flex items-center justify-center font-mono text-[11px] text-blue-400">
+              <span class="bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg">Bandwidth (Largura da Banda): <strong>1.48% (Compressão Pré-Rompimento)</strong></span>
+            </div>
+          `;
+          document.getElementById("subchart-title").innerHTML = `<i class="fa-solid fa-bullseye"></i> Volatilidade das Bandas de Bollinger`;
+          document.getElementById("subchart-title").className = "flex items-center gap-1.5 font-bold text-blue-400";
+          document.getElementById("subchart-levels").innerHTML = `<span class="text-cyan-400">Squeeze: Ativo</span>`;
+        },
+        renderOverlay: function(container) {
+          container.innerHTML = `
+            <div class="absolute w-full top-[15%] h-[70%] bg-blue-500/[0.04] border-y border-blue-500/40 flex flex-col justify-between px-3 py-1 text-[9px] text-blue-400 font-mono">
+              <span>Banda Superior (2.0σ): $89,820</span>
+              <span>Banda Inferior (2.0σ): $87,240</span>
             </div>
           `;
         }
@@ -535,18 +638,31 @@
 
     let candles = [];
 
-    // KEY FUNCTION: WHEN USER CHANGES STRATEGY DROPDOWN
+    // CORE FUNCTION: TRIGGERED BY CLICKING ANY STRATEGY BUTTON OR CARD
     function handleStrategyChange(stratKey) {
+      activeStrategyKey = stratKey;
       const s = strategies[stratKey] || strategies.rsi;
-      
-      // 1. Show flash alert banner
+
+      // 1. Highlight the selected card with vibrant styling
+      document.querySelectorAll(".strat-btn").forEach(btn => {
+        btn.className = "strat-btn p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 text-left transition hover:scale-[1.02] shadow-sm";
+      });
+      const activeBtn = document.getElementById(`card-btn-${stratKey}`);
+      if (activeBtn) {
+        if (stratKey === 'rsi') activeBtn.className = "strat-btn p-2.5 rounded-xl border border-purple-500/80 bg-purple-500/20 text-left transition hover:scale-[1.02] shadow-md ring-1 ring-purple-500/50";
+        if (stratKey === 'trend') activeBtn.className = "strat-btn p-2.5 rounded-xl border border-cyan-500/80 bg-cyan-500/20 text-left transition hover:scale-[1.02] shadow-md ring-1 ring-cyan-500/50";
+        if (stratKey === 'grid') activeBtn.className = "strat-btn p-2.5 rounded-xl border border-amber-500/80 bg-amber-500/20 text-left transition hover:scale-[1.02] shadow-md ring-1 ring-amber-500/50";
+        if (stratKey === 'bollinger') activeBtn.className = "strat-btn p-2.5 rounded-xl border border-blue-500/80 bg-blue-500/20 text-left transition hover:scale-[1.02] shadow-md ring-1 ring-blue-500/50";
+      }
+
+      // 2. Show alert banner
       const alertEl = document.getElementById("strategy-alert");
       const alertTxt = document.getElementById("strategy-alert-text");
-      alertTxt.innerHTML = `Estratégia carregada: <strong>${s.name}</strong>. Parâmetros e overlays reconfigurados!`;
+      alertTxt.innerHTML = `Estratégia ativada: <strong>${s.name}</strong>. Parâmetros e osciladores sincronizados!`;
       alertEl.classList.remove("hidden");
       setTimeout(() => alertEl.classList.add("hidden"), 3000);
 
-      // 2. Automatically update Stop Loss & Take Profit with pulse animation
+      // 3. Automatically update inputs with pulse animation
       const slInput = document.getElementById("sl-input");
       const tpInput = document.getElementById("tp-input");
       const levSelect = document.getElementById("leverage-select");
@@ -560,28 +676,30 @@
         setTimeout(() => el.classList.remove("field-updated"), 600);
       });
 
-      // 3. Update Strategy Description & Badges
+      // 4. Update Strategy Description & Badges
       document.getElementById("strategy-desc-text").innerHTML = s.desc;
       document.getElementById("strategy-regime-badge").innerText = s.regime;
       document.getElementById("active-strategy-label").innerText = `${s.shortName} Ativo`;
       document.getElementById("active-indicators-bar").innerHTML = s.indicatorsHtml;
 
-      // 4. Update Leverage in position row
+      // 5. Update position leverage tag
       const posLev = document.getElementById("pos-1-lev");
       if (posLev) posLev.innerText = `${s.defaultLev}x`;
 
-      // 5. Update Scorecard with realistic strategy profile
+      // 6. Recalculate metrics scorecard
       recalcMetrics();
 
-      // 6. Redraw chart with strategy-specific overlays
+      // 7. Render strategy-specific Subchart (Oscillator) & Overlays
+      const subchartBody = document.getElementById("subchart-body");
+      if (s.renderSubchart) s.renderSubchart(subchartBody);
+
+      // 8. Re-render chart frame
       renderChart();
     }
 
     function recalcMetrics() {
-      const stratKey = document.getElementById("strat-type").value;
-      const s = strategies[stratKey] || strategies.rsi;
+      const s = strategies[activeStrategyKey] || strategies.rsi;
       const capital = parseFloat(document.getElementById("capital-input").value) || 10000;
-
       const profit = Math.round(capital * (s.roiPct / 100) * 100) / 100;
       
       document.getElementById("stat-profit").innerText = `+$${profit.toLocaleString()} (+${s.roiPct}%)`;
@@ -591,7 +709,6 @@
       document.getElementById("stat-sharpe").innerText = s.sharpe;
       document.getElementById("stat-trades").innerText = s.trades;
 
-      // Visual pulse on scorecard
       ["card-profit", "card-winrate", "card-factor", "card-drawdown"].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -627,18 +744,15 @@
 
     function renderChart() {
       const track = document.getElementById("candles-track");
-      const volTrack = document.getElementById("volume-track");
       const overlayLayer = document.getElementById("strategy-overlay-layer");
       track.innerHTML = "";
-      volTrack.innerHTML = "";
 
       const minPrice = Math.min(...candles.map(c => c.low));
       const maxPrice = Math.max(...candles.map(c => c.high));
       const range = maxPrice - minPrice || 1;
 
       // Update overlay for active strategy
-      const stratKey = document.getElementById("strat-type").value;
-      const s = strategies[stratKey] || strategies.rsi;
+      const s = strategies[activeStrategyKey] || strategies.rsi;
       if (s.renderOverlay) {
         s.renderOverlay(overlayLayer, minPrice, maxPrice);
       }
@@ -667,17 +781,11 @@
           ${sigHtml}
           <div class="w-full relative flex justify-center items-center h-full">
             <div class="absolute w-[1.5px] ${isUp ? 'bg-emerald-400' : 'bg-rose-400'}" style="top: ${wickTop}%; height: ${wickH}%;"></div>
-            <div class="absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500/30' : 'bg-rose-400 shadow-sm shadow-rose-500/30'}" style="top: ${topPct}%; height: ${bodyH}%;"></div>
+            <div id="candle-body-${idx}" class="absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500/30' : 'bg-rose-400 shadow-sm shadow-rose-500/30'}" style="top: ${topPct}%; height: ${bodyH}%;"></div>
           </div>
           <span class="text-[9px] text-slate-400 mt-2 font-mono">${c.time}</span>
         `;
         track.appendChild(col);
-
-        // Volume Bar
-        const volBar = document.createElement("div");
-        volBar.className = `flex-1 rounded-t-sm transition-all duration-300 ${isUp ? 'bg-emerald-500/40 hover:bg-emerald-400' : 'bg-rose-500/40 hover:bg-rose-400'}`;
-        volBar.style.height = `${(c.volume / 5000) * 100}%`;
-        volTrack.appendChild(volBar);
       });
     }
 
@@ -793,7 +901,7 @@
       }, 500);
     }
 
-    // THEME TOGGLE (Fixed 100% of header and all panels!)
+    // THEME TOGGLE (Dark / Light)
     function toggleTheme() {
       isDarkMode = !isDarkMode;
       const html = document.documentElement;
