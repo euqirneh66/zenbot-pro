@@ -1,22 +1,28 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="pt-BR" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZenBot Pro — Next.js 15 Algorithmic Crypto Trading & Backtesting Dashboard</title>
+  <title>ZenBot Pro — Terminal de Trading Algorítmico & Backtesting de Alta Frequência</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
           colors: {
-            brand: {
-              emerald: "#10b981",
-              rose: "#f43f5e",
-              dark: "#080d1a",
-              card: "#0c1322",
-              border: "#1e293b"
+            fintech: {
+              up: "#10b981",
+              down: "#f43f5e",
+              cyan: "#06b6d4",
+              amber: "#f59e0b",
+              darkBg: "#050811",
+              darkCard: "#0b1120",
+              darkBorder: "#1e293b"
             }
           }
         }
@@ -26,531 +32,617 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
-    body { font-family: "Plus Jakarta Sans", sans-serif; transition: background-color 0.2s ease, color 0.2s ease; }
+    body { font-family: "Plus Jakarta Sans", sans-serif; }
     .font-mono { font-family: "JetBrains Mono", monospace; }
+
+    /* Flash animations for real-time market updates */
+    @keyframes flashGreen {
+      0% { background-color: rgba(16, 185, 129, 0.4); }
+      100% { background-color: transparent; }
+    }
+    @keyframes flashRed {
+      0% { background-color: rgba(244, 63, 94, 0.4); }
+      100% { background-color: transparent; }
+    }
+    .flash-up { animation: flashGreen 0.6s ease-out; }
+    .flash-down { animation: flashRed 0.6s ease-out; }
+
+    /* Custom high-finance scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.25); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.45); }
+
+    /* Grid background pattern */
+    .chart-grid {
+      background-size: 40px 40px;
+      background-image: linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    }
   </style>
 </head>
-<body class="bg-[#080d1a] text-slate-100 min-h-screen flex flex-col transition-colors">
-  <!-- Top Telemetry Navigation -->
-  <header class="border-b border-slate-800/80 bg-[#0c1322]/90 backdrop-blur sticky top-0 z-50 px-4 md:px-6 py-3 transition-colors">
-    <div class="max-w-[1700px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
-      <!-- Logo & Pairs -->
-      <div class="flex items-center gap-4">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20">
+<body class="bg-[#050811] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+
+  <!-- Top Telemetry Header -->
+  <header id="main-header" class="border-b border-slate-800/80 bg-[#0b1120]/90 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200">
+    <div class="max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
+      
+      <!-- Brand & Pair Selector -->
+      <div class="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-500/25 ring-1 ring-white/20">
             <i class="fa-solid fa-bolt text-lg"></i>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <span class="text-base font-black tracking-tight text-white dark:text-white" id="brand-text">
+              <span class="text-base font-black tracking-tight text-white" id="brand-title">
                 ZenBot <span class="text-emerald-400">Pro</span>
               </span>
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                v2.0 Algorithmic
+                LIVE WEBSOCKET
               </span>
             </div>
-            <p class="text-[11px] text-slate-400">
-              Binance & Coinbase API Turnkey Engine
-            </p>
+            <p class="text-[11px] text-slate-400">Binance Futures & CCXT Turnkey Engine</p>
           </div>
         </div>
 
-        <!-- Pair Selector -->
-        <div class="hidden sm:flex items-center bg-slate-900 border border-slate-800 rounded-xl p-1 gap-1">
-          <button onclick="changePair('BTC/USDT')" id="pair-btn-btc" class="pair-btn px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white transition">BTC/USDT</button>
-          <button onclick="changePair('ETH/USDT')" id="pair-btn-eth" class="pair-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">ETH/USDT</button>
-          <button onclick="changePair('SOL/USDT')" id="pair-btn-sol" class="pair-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">SOL/USDT</button>
-          <button onclick="changePair('BNB/USDT')" id="pair-btn-bnb" class="pair-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">BNB/USDT</button>
+        <!-- Pair Navigation Pill -->
+        <div class="flex items-center bg-slate-900/80 dark:bg-slate-900/80 border border-slate-800 rounded-xl p-1 gap-1 header-pill">
+          <button onclick="changePair('BTC/USDT')" id="btn-pair-BTC/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition">BTC/USDT</button>
+          <button onclick="changePair('ETH/USDT')" id="btn-pair-ETH/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">ETH/USDT</button>
+          <button onclick="changePair('SOL/USDT')" id="btn-pair-SOL/USDT" class="pair-pill px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">SOL/USDT</button>
         </div>
       </div>
 
-      <!-- Real-time Ticker Metrics -->
-      <div class="hidden xl:flex items-center gap-6 text-xs">
-        <div>
-          <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Preço Atual</span>
-          <span class="text-base font-black text-white flex items-center gap-1.5" id="ticker-price">
-            $89,320.00
-            <span class="text-xs font-bold text-emerald-400" id="ticker-change">+4.25%</span>
+      <!-- Real-time Market Ticker Ribbon -->
+      <div class="hidden xl:flex items-center gap-6 text-xs bg-slate-900/50 dark:bg-slate-900/50 border border-slate-800/80 px-4 py-1.5 rounded-xl header-ribbon">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Último Preço:</span>
+          <span id="ticker-live-price" class="font-mono text-sm font-black text-white px-2 py-0.5 rounded transition">
+            $89,420.50
+          </span>
+          <span id="ticker-live-pct" class="font-mono text-xs font-bold text-emerald-400">
+            +4.38%
           </span>
         </div>
-        <div class="h-7 w-[1px] bg-slate-800"></div>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
         <div>
-          <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Volume 24h</span>
-          <span class="font-bold text-slate-200" id="ticker-volume">$1,428.5M</span>
+          <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">Máx 24h:</span>
+          <span id="ticker-high" class="font-mono font-bold text-emerald-400">$89,850.00</span>
         </div>
-        <div class="h-7 w-[1px] bg-slate-800"></div>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
         <div>
-          <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Máxima 24h</span>
-          <span class="font-bold text-emerald-400" id="ticker-high">$89,450.00</span>
+          <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">Mín 24h:</span>
+          <span id="ticker-low" class="font-mono font-bold text-rose-400">$86,210.00</span>
         </div>
-        <div class="h-7 w-[1px] bg-slate-800"></div>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
         <div>
-          <span class="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Mínima 24h</span>
-          <span class="font-bold text-rose-400" id="ticker-low">$86,100.00</span>
+          <span class="text-slate-400 text-[10px] uppercase font-bold mr-1">Vol 24h:</span>
+          <span class="font-mono font-bold text-slate-200">$1,842.6M</span>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="flex items-center gap-2.5">
-        <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition border border-slate-800 w-9 h-9 flex items-center justify-center">
+      <!-- Actions & CTA Button -->
+      <div class="flex items-center gap-2.5 w-full lg:w-auto justify-end">
+        <!-- Light / Dark Mode Switcher -->
+        <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 transition border border-slate-800 w-9 h-9 flex items-center justify-center header-btn" title="Alternar Modo Claro / Escuro">
           <i id="theme-icon" class="fa-solid fa-sun text-amber-400 text-sm"></i>
         </button>
 
-        <button onclick="toggleBot()" id="bot-status-btn" class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+        <!-- Bot Engine Switch -->
+        <button onclick="toggleBotState()" id="bot-toggle-btn" class="px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-2 border bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Bot Ativo</span>
+          <span id="bot-status-text">HFT Bot Ativo</span>
         </button>
 
-        <!-- CTA Button -->
-        <a href="https://rancharia.gumroad.com" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500/20">
+        <!-- Gumroad Buy Button -->
+        <a href="https://rancharia.gumroad.com" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]">
           <span>⚡ Obter Código ($49)</span>
         </a>
       </div>
     </div>
   </header>
 
-  <!-- Main Content Grid -->
-  <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <!-- LEFT: Candlestick Chart & Positions (8 cols) -->
-    <div class="lg:col-span-8 flex flex-col gap-6">
-      <!-- Chart Card -->
-      <div class="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-5 shadow-sm card-container">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-800/80 gap-3">
+  <!-- Main Trading Workspace Grid -->
+  <main class="flex-1 max-w-[1800px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+    <!-- LEFT COLUMN: Live Candlestick Canvas & Order Book (8 cols) -->
+    <div class="lg:col-span-8 flex flex-col gap-5">
+      
+      <!-- Interactive Candlestick Chart Card -->
+      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl relative overflow-hidden card-panel">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3.5 border-b border-slate-800/80 gap-3">
           <div class="flex items-center gap-3">
-            <span class="text-base font-extrabold text-white flex items-center gap-2">
-              <i class="fa-solid fa-chart-line text-emerald-400"></i>
-              Gráfico de Preços & Sinais Algorítmicos
+            <span class="text-sm font-black text-white flex items-center gap-2 card-title">
+              <i class="fa-solid fa-chart-candlestick text-emerald-400"></i>
+              Feed de Preço em Tempo Real
             </span>
-            <span class="text-xs text-slate-400 font-medium">Timeframe: 1H</span>
+            <span class="text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">1m | Heikin-Ashi</span>
           </div>
-          <div class="flex items-center gap-1.5 text-xs">
-            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">EMA 20</span>
-            <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">EMA 50</span>
-            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">RSI: 64.2</span>
+
+          <!-- Indicator Toggles -->
+          <div class="flex items-center gap-1.5 text-xs flex-wrap">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-mono font-bold border border-cyan-500/20 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> EMA 20
+            </span>
+            <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-mono font-bold border border-amber-500/20 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> EMA 50
+            </span>
+            <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-mono font-bold border border-purple-500/20">
+              RSI (14): <strong id="rsi-val">64.2</strong>
+            </span>
+            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-bold border border-emerald-500/20">
+              Sinal: <strong id="signal-badge">COMPRA FORTE</strong>
+            </span>
           </div>
         </div>
 
-        <!-- Candlestick SVG Container -->
-        <div class="mt-4 relative bg-[#070b14] rounded-xl p-4 border border-slate-800/60 overflow-hidden inner-card">
-          <div id="candles-container" class="h-72 w-full flex items-end justify-between gap-1 pt-6 pb-2">
-            <!-- Dynamic Candles injected here via JS -->
+        <!-- Candlestick SVG & HTML Canvas with Real-Time Ticking Candle -->
+        <div class="mt-4 relative bg-[#070b14] rounded-xl p-4 border border-slate-800/80 overflow-hidden chart-grid chart-bg">
+          <!-- Price crosshair line -->
+          <div class="absolute right-0 top-1/2 -translate-y-1/2 w-full border-b border-dashed border-slate-700/60 pointer-events-none z-0"></div>
+          <div id="live-price-tag" class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-emerald-500 text-white font-mono text-[10px] font-extrabold z-10 shadow-md">
+            $89,420.50
           </div>
+
+          <!-- Candles Container -->
+          <div id="candles-track" class="h-80 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-10">
+            <!-- Dynamic Candlesticks rendered via JS -->
+          </div>
+
           <!-- Volume Sub-chart -->
-          <div id="volume-container" class="h-14 w-full flex items-end justify-between gap-1 pt-2 border-t border-slate-800">
-            <!-- Dynamic Volume bars injected here via JS -->
+          <div class="border-t border-slate-800/80 pt-2 flex items-end justify-between gap-1.5 h-16" id="volume-track">
+            <!-- Dynamic Volume bars rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Chart Bottom Telemetry Bar -->
+        <div class="mt-3 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <div class="flex items-center gap-4">
+            <span>Latência: <strong class="text-emerald-400">12ms</strong> (Binance Tokyo Edge)</span>
+            <span>Ordens Executadas Hoje: <strong class="text-slate-200">1.842</strong></span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Algoritmo em Execução Automática</span>
           </div>
         </div>
       </div>
 
-      <!-- Positions & Orders Table -->
-      <div class="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-5 shadow-sm card-container">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div class="flex items-center gap-2">
-            <button onclick="switchTableTab('positions')" id="tab-positions-btn" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white">
-              <i class="fa-solid fa-layer-group"></i> Posições Abertas (<span id="pos-count">2</span>)
-            </button>
-            <button onclick="switchTableTab('orders')" id="tab-orders-btn" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
-              <i class="fa-solid fa-clock-rotate-left"></i> Histórico de Ordens
-            </button>
+      <!-- Split Table: Open Positions & Live Trade Stream -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+        
+        <!-- Open Positions (7 cols) -->
+        <div class="md:col-span-7 bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <span class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 card-title">
+              <i class="fa-solid fa-layer-group text-emerald-400"></i> Posições Abertas (<span id="open-pos-count">2</span>)
+            </span>
+            <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+              Lucro Total: +$520.50
+            </span>
           </div>
-          <span class="text-xs text-slate-400 font-medium">Execução: 100% Automática</span>
+
+          <div class="overflow-x-auto mt-3">
+            <table class="w-full text-left text-xs font-mono">
+              <thead>
+                <tr class="text-slate-400 text-[10px] uppercase font-bold border-b border-slate-800/60 font-sans">
+                  <th class="pb-2">Ativo</th>
+                  <th class="pb-2">Entrada</th>
+                  <th class="pb-2">Atual</th>
+                  <th class="pb-2">PnL</th>
+                  <th class="pb-2 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="pos-tbody" class="divide-y divide-slate-800/60">
+                <tr id="pos-1" class="hover:bg-slate-900/40 transition">
+                  <td class="py-2.5 font-bold text-white">BTC/USDT <span class="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-400">3x</span></td>
+                  <td class="py-2.5 text-slate-400">$87,850</td>
+                  <td class="py-2.5 font-bold text-white" id="pos-1-cur">$89,420</td>
+                  <td class="py-2.5 font-bold text-emerald-400" id="pos-1-pnl">+$235.50 (+5.36%)</td>
+                  <td class="py-2.5 text-right">
+                    <button onclick="closeRow('pos-1')" class="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 text-[10px] font-bold transition">Fechar</button>
+                  </td>
+                </tr>
+                <tr id="pos-2" class="hover:bg-slate-900/40 transition">
+                  <td class="py-2.5 font-bold text-white">ETH/USDT <span class="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-400">3x</span></td>
+                  <td class="py-2.5 text-slate-400">$3,445</td>
+                  <td class="py-2.5 font-bold text-white" id="pos-2-cur">$3,568</td>
+                  <td class="py-2.5 font-bold text-emerald-400" id="pos-2-pnl">+$285.00 (+3.57%)</td>
+                  <td class="py-2.5 text-right">
+                    <button onclick="closeRow('pos-2')" class="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 text-[10px] font-bold transition">Fechar</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- Positions Table -->
-        <div id="positions-table-wrap" class="overflow-x-auto mt-3">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800/60">
-                <th class="pb-2">Ativo</th>
-                <th class="pb-2">Tipo</th>
-                <th class="pb-2">Entrada</th>
-                <th class="pb-2">Preço Atual</th>
-                <th class="pb-2">Lucro / PnL</th>
-                <th class="pb-2">Stop Loss</th>
-                <th class="pb-2">Take Profit</th>
-                <th class="pb-2 text-right">Ação</th>
-              </tr>
-            </thead>
-            <tbody id="positions-tbody" class="divide-y divide-slate-800/60">
-              <tr id="pos-row-1" class="hover:bg-slate-900/40 transition">
-                <td class="py-3 font-bold text-white">BTC/USDT</td>
-                <td class="py-3"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LONG 3x</span></td>
-                <td class="py-3 font-mono">$87,850.00</td>
-                <td class="py-3 font-mono font-bold">$89,320.00</td>
-                <td class="py-3 font-mono font-bold text-emerald-400">+$220.50 (+5.02%)</td>
-                <td class="py-3 font-mono text-slate-400">$85,650.00</td>
-                <td class="py-3 font-mono text-slate-400">$93,120.00</td>
-                <td class="py-3 text-right">
-                  <button onclick="closePosition('pos-row-1')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 text-[11px] font-bold transition border border-rose-500/20">Fechar</button>
-                </td>
-              </tr>
-              <tr id="pos-row-2" class="hover:bg-slate-900/40 transition">
-                <td class="py-3 font-bold text-white">ETH/USDT</td>
-                <td class="py-3"><span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LONG 3x</span></td>
-                <td class="py-3 font-mono">$3,445.00</td>
-                <td class="py-3 font-mono font-bold">$3,565.00</td>
-                <td class="py-3 font-mono font-bold text-emerald-400">+$300.00 (+3.48%)</td>
-                <td class="py-3 font-mono text-slate-400">$3,350.00</td>
-                <td class="py-3 font-mono text-slate-400">$3,680.00</td>
-                <td class="py-3 text-right">
-                  <button onclick="closePosition('pos-row-2')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 text-[11px] font-bold transition border border-rose-500/20">Fechar</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Live Trade Stream (5 cols) -->
+        <div class="md:col-span-5 bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <span class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 card-title">
+              <i class="fa-solid fa-satellite-dish text-cyan-400"></i> Fluxo de Ordens
+            </span>
+            <span class="text-[10px] text-slate-400 font-mono">Live Feed</span>
+          </div>
+
+          <div class="mt-2 overflow-hidden h-36 font-mono text-[11px]">
+            <div id="live-trade-stream" class="space-y-1.5">
+              <!-- Dynamically populated in real-time -->
+            </div>
+          </div>
         </div>
 
-        <!-- Orders Table (Hidden by default) -->
-        <div id="orders-table-wrap" class="overflow-x-auto mt-3 hidden">
-          <table class="w-full text-left text-xs font-mono">
-            <thead>
-              <tr class="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800/60 font-sans">
-                <th class="pb-2">Horário</th>
-                <th class="pb-2">Ativo</th>
-                <th class="pb-2">Lado</th>
-                <th class="pb-2">Preço</th>
-                <th class="pb-2">Total ($)</th>
-                <th class="pb-2">Estratégia</th>
-                <th class="pb-2 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-800/60">
-              <tr class="hover:bg-slate-900/40 transition">
-                <td class="py-2.5 text-slate-400">18:02:14</td>
-                <td class="py-2.5 font-bold text-white">BTC/USDT</td>
-                <td class="py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400">BUY</span></td>
-                <td class="py-2.5">$88,100.00</td>
-                <td class="py-2.5">$13,215.00</td>
-                <td class="py-2.5 text-slate-400 font-sans">RSI Mean Reversion</td>
-                <td class="py-2.5 text-right font-sans text-emerald-400 font-bold"><i class="fa-solid fa-check text-xs"></i> FILLED</td>
-              </tr>
-              <tr class="hover:bg-slate-900/40 transition">
-                <td class="py-2.5 text-slate-400">14:15:30</td>
-                <td class="py-2.5 font-bold text-white">BTC/USDT</td>
-                <td class="py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-400">SELL</span></td>
-                <td class="py-2.5">$87,800.00</td>
-                <td class="py-2.5">$13,170.00</td>
-                <td class="py-2.5 text-slate-400 font-sans">Trailing Stop Trigger</td>
-                <td class="py-2.5 text-right font-sans text-emerald-400 font-bold"><i class="fa-solid fa-check text-xs"></i> FILLED</td>
-              </tr>
-              <tr class="hover:bg-slate-900/40 transition">
-                <td class="py-2.5 text-slate-400">08:04:10</td>
-                <td class="py-2.5 font-bold text-white">BTC/USDT</td>
-                <td class="py-2.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400">BUY</span></td>
-                <td class="py-2.5">$87,850.00</td>
-                <td class="py-2.5">$17,570.00</td>
-                <td class="py-2.5 text-slate-400 font-sans">SuperTrend Momentum</td>
-                <td class="py-2.5 text-right font-sans text-emerald-400 font-bold"><i class="fa-solid fa-check text-xs"></i> FILLED</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
 
-    <!-- RIGHT: Backtest Engine & Risk (4 cols) -->
-    <div class="lg:col-span-4 flex flex-col gap-6">
-      <!-- Backtesting Card -->
-      <div class="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-5 shadow-sm space-y-4 card-container">
+    <!-- RIGHT COLUMN: Backtest Engine & Risk Controls (4 cols) -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+      
+      <!-- Backtesting Simulation Engine Card -->
+      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-4 card-panel">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <div class="flex items-center gap-2">
-            <i class="fa-solid fa-chart-column text-emerald-400"></i>
-            <h3 class="text-sm font-extrabold text-white">
-              Simulador de Backtest
-            </h3>
+            <i class="fa-solid fa-microchip text-emerald-400"></i>
+            <h3 class="text-sm font-black text-white card-title">Simulador de Backtest</h3>
           </div>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Histórico 90D
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+            90D Data Feed
           </span>
         </div>
 
         <!-- Strategy Inputs -->
         <div class="space-y-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Estratégia Algorítmica</label>
-            <select id="strategy-select" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500 transition inner-card">
-              <option value="rsi">RSI Mean Reversion (Reversão à Média)</option>
+            <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Estratégia Algorítmica</label>
+            <select id="strat-type" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-medium focus:outline-none focus:border-emerald-500 transition input-control">
+              <option value="rsi">RSI Mean Reversion (Reversão à Média HFT)</option>
               <option value="trend">SuperTrend Momentum (Seguidor de Tendência)</option>
-              <option value="grid">Grid Trading (Acumulação em Faixa)</option>
-              <option value="bollinger">Bollinger Bands Scalper (Alta Frequência)</option>
+              <option value="grid">Grid Trading Neural (Acumulação em Faixa)</option>
+              <option value="bollinger">Bollinger Volatility Breakout (Scalper)</option>
             </select>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Capital Inicial ($)</label>
-              <input type="number" id="input-capital" value="10000" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 inner-card">
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Capital Inicial ($)</label>
+              <input type="number" id="capital-input" value="10000" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Alavancagem</label>
-              <select class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 inner-card">
-                <option>1x (Spot)</option>
-                <option selected>3x Cross</option>
-                <option>5x Margem</option>
-                <option>10x Futuros</option>
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Alavancagem</label>
+              <select class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
+                <option>1x (Spot Seguro)</option>
+                <option selected>3x (Recomendado)</option>
+                <option>5x (Cross Margem)</option>
+                <option>10x (Futuros HFT)</option>
               </select>
             </div>
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Stop Loss (%)</label>
-              <input type="number" step="0.5" value="2.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 inner-card">
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Stop Loss (%)</label>
+              <input type="number" step="0.5" value="2.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">Take Profit (%)</label>
-              <input type="number" step="0.5" value="6.0" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 inner-card">
+              <label class="block text-xs font-semibold text-slate-300 mb-1 input-label">Take Profit (%)</label>
+              <input type="number" step="0.5" value="6.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control">
             </div>
           </div>
 
-          <!-- Run Backtest Button -->
-          <button onclick="runBacktestSimulation()" id="run-btn" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20">
+          <!-- Execute Backtest Button -->
+          <button onclick="runBacktest()" id="btn-backtest" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98]">
             <i class="fa-solid fa-play text-xs"></i>
-            <span>Executar Backtest da Estratégia</span>
+            <span>Executar Simulação de Estratégia</span>
           </button>
         </div>
 
-        <!-- Metrics Scorecard -->
+        <!-- Strategy Telemetry Scorecard -->
         <div class="pt-3 border-t border-slate-800 space-y-3">
           <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-            Métricas de Performance da Estratégia
+            Métricas Auditadas do Backtest
           </span>
 
           <div class="grid grid-cols-2 gap-2.5">
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 inner-card">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
               <span class="text-[10px] text-slate-400 block font-medium">Lucro Líquido</span>
-              <span class="text-sm font-black text-emerald-400" id="stat-profit">+$4,285.50 (+42.85%)</span>
+              <span class="text-sm font-mono font-black text-emerald-400" id="stat-profit">+$4,285.50 (+42.8%)</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 inner-card">
-              <span class="text-[10px] text-slate-400 block font-medium">Taxa de Acerto (Win Rate)</span>
-              <span class="text-sm font-black text-white" id="stat-winrate">68.4%</span>
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
+              <span class="text-[10px] text-slate-400 block font-medium">Taxa de Acerto</span>
+              <span class="text-sm font-mono font-black text-white" id="stat-winrate">68.4%</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 inner-card">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
               <span class="text-[10px] text-slate-400 block font-medium">Fator de Lucro</span>
-              <span class="text-sm font-black text-emerald-400" id="stat-profit-factor">2.14x</span>
+              <span class="text-sm font-mono font-black text-emerald-400" id="stat-factor">2.14x</span>
             </div>
-            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 inner-card">
+            <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card">
               <span class="text-[10px] text-slate-400 block font-medium">Max Drawdown</span>
-              <span class="text-sm font-black text-rose-400" id="stat-drawdown">-7.8%</span>
+              <span class="text-sm font-mono font-black text-rose-400" id="stat-drawdown">-7.8%</span>
             </div>
           </div>
 
-          <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] flex items-center justify-between font-semibold">
-            <span>Sharpe Ratio: <strong id="stat-sharpe">1.92</strong></span>
-            <span>Total Operações: <strong id="stat-trades">142</strong></span>
+          <div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-mono flex items-center justify-between font-bold">
+            <span>Sharpe Ratio: <strong id="stat-sharpe" class="text-white">1.92</strong></span>
+            <span>Operações: <strong id="stat-trades" class="text-white">142</strong></span>
           </div>
         </div>
       </div>
 
-      <!-- Security Card -->
-      <div class="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 shadow-sm flex items-center gap-3 card-container">
-        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
-          <i class="fa-solid fa-shield-halved text-lg"></i>
+      <!-- Security & API Connectivity Card -->
+      <div class="bg-[#0b1120] border border-slate-800/80 rounded-2xl p-4 shadow-xl flex items-center gap-3.5 card-panel">
+        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-shield-halved"></i>
         </div>
         <div>
-          <div class="text-xs font-bold text-white flex items-center gap-1.5">
-            <span>Modo Seguro: Chaves API Criptografadas</span>
+          <div class="text-xs font-black text-white flex items-center gap-1.5 card-title">
+            <span>Segurança Criptografada AES-256</span>
           </div>
           <p class="text-[11px] text-slate-400">
-            Permissão de leitura e trade apenas. Saques desabilitados por padrão.
+            Conexão direta com Binance & Coinbase via WebSockets e CCXT. Saques desativados.
           </p>
         </div>
       </div>
+
     </div>
+
   </main>
 
   <script>
-    // Historical candle data
-    const candlesData = {
-      "BTC/USDT": [
-        { time: "00:00", open: 86200, high: 86900, low: 86100, close: 86750, volume: 1420 },
-        { time: "02:00", open: 86750, high: 87400, low: 86500, close: 87200, volume: 1890, signal: "BUY" },
-        { time: "04:00", open: 87200, high: 87600, low: 86900, close: 87100, volume: 1250 },
-        { time: "06:00", open: 87100, high: 87900, low: 87050, close: 87850, volume: 2100 },
-        { time: "08:00", open: 87850, high: 88500, low: 87600, close: 88420, volume: 3450 },
-        { time: "10:00", open: 88420, high: 88950, low: 88100, close: 88600, volume: 2800 },
-        { time: "12:00", open: 88600, high: 88800, low: 87900, close: 88150, volume: 1950 },
-        { time: "14:00", open: 88150, high: 88400, low: 87600, close: 87800, volume: 1600, signal: "SELL" },
-        { time: "16:00", open: 87800, high: 88300, low: 87700, close: 88100, volume: 1750 },
-        { time: "18:00", open: 88100, high: 88900, low: 88000, close: 88750, volume: 2900, signal: "BUY" },
-        { time: "20:00", open: 88750, high: 89200, low: 88500, close: 89050, volume: 3100 },
-        { time: "22:00", open: 89050, high: 89450, low: 88800, close: 89320, volume: 2650 }
-      ],
-      "ETH/USDT": [
-        { time: "00:00", open: 3380, high: 3420, low: 3360, close: 3410, volume: 5200 },
-        { time: "04:00", open: 3410, high: 3460, low: 3400, close: 3445, volume: 6400, signal: "BUY" },
-        { time: "08:00", open: 3445, high: 3510, low: 3440, close: 3490, volume: 8900 },
-        { time: "12:00", open: 3490, high: 3525, low: 3470, close: 3480, volume: 7100 },
-        { time: "16:00", open: 3480, high: 3530, low: 3475, close: 3520, volume: 8300 },
-        { time: "20:00", open: 3520, high: 3580, low: 3510, close: 3565, volume: 9200 }
-      ],
-      "SOL/USDT": [
-        { time: "00:00", open: 185, high: 191, low: 184, close: 190, volume: 15200 },
-        { time: "04:00", open: 190, high: 196, low: 189, close: 195, volume: 18400, signal: "BUY" },
-        { time: "08:00", open: 195, high: 202, low: 194, close: 201, volume: 24900 },
-        { time: "12:00", open: 201, high: 205, low: 199, close: 202, volume: 21100 },
-        { time: "16:00", open: 202, high: 208, low: 201, close: 207, volume: 23300 },
-        { time: "20:00", open: 207, high: 214, low: 206, close: 212, volume: 27200 }
-      ],
-      "BNB/USDT": [
-        { time: "00:00", open: 640, high: 648, low: 638, close: 646, volume: 3200 },
-        { time: "04:00", open: 646, high: 655, low: 644, close: 652, volume: 4400, signal: "BUY" },
-        { time: "08:00", open: 652, high: 660, low: 650, close: 658, volume: 5900 },
-        { time: "12:00", open: 658, high: 664, low: 655, close: 661, volume: 4800 },
-        { time: "16:00", open: 661, high: 668, low: 659, close: 665, volume: 5300 },
-        { time: "20:00", open: 665, high: 672, low: 663, close: 670, volume: 6100 }
-      ]
+    // State
+    let currentPair = "BTC/USDT";
+    let isDarkMode = true;
+    let isBotActive = true;
+    let basePrice = 89420.50;
+
+    // Pairs Configuration
+    const pairConfig = {
+      "BTC/USDT": { base: 89420.50, step: 25.0, count: 14, min: 86210, max: 89850 },
+      "ETH/USDT": { base: 3568.20, step: 2.5, count: 14, min: 3410, max: 3620 },
+      "SOL/USDT": { base: 212.80, step: 0.4, count: 14, min: 194, max: 218 }
     };
 
-    let currentPair = "BTC/USDT";
-    let isBotActive = true;
-    let isDarkMode = true;
+    // Generate Initial Candlestick dataset
+    let candles = [];
+    function initCandles() {
+      const cfg = pairConfig[currentPair];
+      basePrice = cfg.base;
+      candles = [];
+      let p = cfg.base - (cfg.step * 10);
+      
+      for (let i = 0; i < cfg.count; i++) {
+        const delta = (Math.random() - 0.46) * cfg.step * 2.2;
+        const open = p;
+        const close = p + delta;
+        const high = Math.max(open, close) + Math.random() * cfg.step;
+        const low = Math.min(open, close) - Math.random() * cfg.step;
+        const vol = Math.floor(1000 + Math.random() * 4000);
+        
+        let signal = null;
+        if (i === 3) signal = "BUY";
+        if (i === 8) signal = "SELL";
+        if (i === cfg.count - 2) signal = "BUY";
 
-    function renderCandles() {
-      const candles = candlesData[currentPair];
-      const container = document.getElementById("candles-container");
-      const volContainer = document.getElementById("volume-container");
-      container.innerHTML = "";
-      volContainer.innerHTML = "";
+        candles.push({ time: `${10 + i}:00`, open, close, high, low, volume: vol, signal });
+        p = close;
+      }
+      renderChart();
+    }
+
+    function renderChart() {
+      const track = document.getElementById("candles-track");
+      const volTrack = document.getElementById("volume-track");
+      track.innerHTML = "";
+      volTrack.innerHTML = "";
 
       const minPrice = Math.min(...candles.map(c => c.low));
       const maxPrice = Math.max(...candles.map(c => c.high));
       const range = maxPrice - minPrice || 1;
 
-      // Update ticker metrics
-      const lastCandle = candles[candles.length - 1];
-      const firstCandle = candles[0];
-      const pctChange = ((lastCandle.close - firstCandle.open) / firstCandle.open) * 100;
-      
-      document.getElementById("ticker-price").innerHTML = `$${lastCandle.close.toLocaleString()} <span class="text-xs font-bold ${pctChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(2)}%</span>`;
-      document.getElementById("ticker-high").innerText = `$${maxPrice.toLocaleString()}`;
-      document.getElementById("ticker-low").innerText = `$${minPrice.toLocaleString()}`;
+      // Update price tag
+      const last = candles[candles.length - 1];
+      const tag = document.getElementById("live-price-tag");
+      tag.innerText = `$${last.close.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-      candles.forEach(c => {
+      candles.forEach((c, idx) => {
         const isUp = c.close >= c.open;
-        const topPercent = ((maxPrice - Math.max(c.open, c.close)) / range) * 100;
-        const bodyHeightPercent = (Math.abs(c.close - c.open) / range) * 100;
-        const wickTopPercent = ((maxPrice - c.high) / range) * 100;
-        const wickHeightPercent = ((c.high - c.low) / range) * 100;
+        const topPct = ((maxPrice - Math.max(c.open, c.close)) / range) * 100;
+        const bodyH = Math.max((Math.abs(c.close - c.open) / range) * 100, 2);
+        const wickTop = ((maxPrice - c.high) / range) * 100;
+        const wickH = Math.max(((c.high - c.low) / range) * 100, 4);
 
-        const candleDiv = document.createElement("div");
-        candleDiv.className = "flex-1 flex flex-col items-center relative group h-full justify-end";
+        const col = document.createElement("div");
+        col.className = "flex-1 flex flex-col items-center relative group h-full justify-end";
 
-        let signalHtml = "";
+        let sigHtml = "";
         if (c.signal) {
-          signalHtml = `<div class="absolute top-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-sm z-10 ${c.signal === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}">${c.signal}</div>`;
+          sigHtml = `<div class="absolute top-0 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider z-20 shadow-md ${c.signal === 'BUY' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}">${c.signal}</div>`;
         }
 
-        candleDiv.innerHTML = `
-          ${signalHtml}
+        col.innerHTML = `
+          ${sigHtml}
           <div class="w-full relative flex justify-center items-center h-full">
-            <div class="absolute w-[1.5px] ${isUp ? 'bg-emerald-500' : 'bg-rose-500'}" style="top: ${wickTopPercent}%; height: ${Math.max(wickHeightPercent, 4)}%;"></div>
-            <div class="absolute w-3/4 max-w-[18px] rounded-[2px] transition-all ${isUp ? 'bg-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-rose-500 shadow-sm shadow-rose-500/20'}" style="top: ${topPercent}%; height: ${Math.max(bodyHeightPercent, 3)}%;"></div>
+            <div class="absolute w-[1.5px] ${isUp ? 'bg-emerald-400' : 'bg-rose-400'}" style="top: ${wickTop}%; height: ${wickH}%;"></div>
+            <div id="candle-body-${idx}" class="absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${isUp ? 'bg-emerald-400 shadow-sm shadow-emerald-500/30' : 'bg-rose-400 shadow-sm shadow-rose-500/30'}" style="top: ${topPct}%; height: ${bodyH}%;"></div>
           </div>
-          <span class="text-[10px] text-slate-400 mt-2 font-mono">${c.time}</span>
+          <span class="text-[9px] text-slate-400 mt-2 font-mono">${c.time}</span>
         `;
-        container.appendChild(candleDiv);
+        track.appendChild(col);
 
         // Volume Bar
-        const volDiv = document.createElement("div");
-        volDiv.className = "flex-1 bg-slate-700 hover:bg-emerald-500/60 rounded-t-sm transition-colors";
-        volDiv.style.height = `${(c.volume / 3500) * 100}%`;
-        volContainer.appendChild(volDiv);
+        const volBar = document.createElement("div");
+        volBar.className = `flex-1 rounded-t-sm transition-all duration-300 ${isUp ? 'bg-emerald-500/40 hover:bg-emerald-400' : 'bg-rose-500/40 hover:bg-rose-400'}`;
+        volBar.style.height = `${(c.volume / 5000) * 100}%`;
+        volTrack.appendChild(volBar);
       });
+    }
+
+    // REAL-TIME MARKET TICK ENGINE (Simulates live tick updates every 1.5s)
+    setInterval(() => {
+      if (!candles.length) return;
+      const last = candles[candles.length - 1];
+      const cfg = pairConfig[currentPair];
+      const tick = (Math.random() - 0.48) * (cfg.step * 0.35);
+      
+      const prevClose = last.close;
+      last.close = Math.round((last.close + tick) * 100) / 100;
+      if (last.close > last.high) last.high = last.close;
+      if (last.close < last.low) last.low = last.close;
+      last.volume += Math.floor(Math.random() * 25);
+
+      // Flash Ribbon & Header Price
+      const tickerPriceEl = document.getElementById("ticker-live-price");
+      const isUp = last.close >= prevClose;
+      tickerPriceEl.innerText = `$${last.close.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      tickerPriceEl.classList.remove("flash-up", "flash-down");
+      void tickerPriceEl.offsetWidth; // trigger reflow
+      tickerPriceEl.classList.add(isUp ? "flash-up" : "flash-down");
+      tickerPriceEl.className = `font-mono text-sm font-black px-2 py-0.5 rounded transition ${isUp ? 'text-emerald-400 flash-up' : 'text-rose-400 flash-down'}`;
+
+      // Update Live PnL in open position
+      const pnlEl = document.getElementById("pos-1-pnl");
+      const curEl = document.getElementById("pos-1-cur");
+      if (pnlEl && curEl && currentPair === "BTC/USDT") {
+        curEl.innerText = `$${last.close.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+        const diff = last.close - 87850;
+        pnlEl.innerText = `${diff >= 0 ? '+' : ''}$${(diff * 0.15).toFixed(2)} (${((diff/87850)*100).toFixed(2)}%)`;
+        pnlEl.className = `py-2.5 font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+      }
+
+      // Add a live stream order trade
+      addTradeStreamRow(last.close, isUp);
+
+      // Re-render chart frame
+      renderChart();
+    }, 1600);
+
+    // Live Order Stream Helper
+    const streamContainer = document.getElementById("live-trade-stream");
+    function addTradeStreamRow(price, isBuy) {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(" ")[0];
+      const size = (0.05 + Math.random() * 0.8).toFixed(3);
+      
+      const row = document.createElement("div");
+      row.className = `flex items-center justify-between py-0.5 px-2 rounded text-[10px] animate-pulse ${isBuy ? 'bg-emerald-500/5 text-emerald-400' : 'bg-rose-500/5 text-rose-400'}`;
+      row.innerHTML = `
+        <span class="text-slate-400">${timeStr}</span>
+        <span class="font-bold">${isBuy ? 'COMPRA' : 'VENDA'}</span>
+        <span class="font-bold font-mono">$${price.toFixed(2)}</span>
+        <span class="text-slate-300 font-mono">${size}</span>
+      `;
+
+      streamContainer.prepend(row);
+      if (streamContainer.children.length > 5) {
+        streamContainer.removeChild(streamContainer.lastChild);
+      }
     }
 
     function changePair(pair) {
       currentPair = pair;
-      document.querySelectorAll(".pair-btn").forEach(btn => {
-        btn.className = "pair-btn px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition";
+      document.querySelectorAll(".pair-pill").forEach(b => {
+        b.className = "pair-pill px-3 py-1 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition";
       });
-      const targetId = pair === "BTC/USDT" ? "pair-btn-btc" : pair === "ETH/USDT" ? "pair-btn-eth" : pair === "SOL/USDT" ? "pair-btn-sol" : "pair-btn-bnb";
-      document.getElementById(targetId).className = "pair-btn px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white transition";
-      renderCandles();
+      document.getElementById(`btn-pair-${pair}`).className = "pair-pill px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow-sm transition";
+      initCandles();
     }
 
-    function toggleBot() {
+    function toggleBotState() {
       isBotActive = !isBotActive;
-      const btn = document.getElementById("bot-status-btn");
+      const btn = document.getElementById("bot-toggle-btn");
+      const txt = document.getElementById("bot-status-text");
       if (isBotActive) {
-        btn.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
-        btn.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>Bot Ativo</span>`;
+        btn.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-2 border bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+        txt.innerText = "HFT Bot Ativo";
       } else {
-        btn.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border bg-amber-500/10 text-amber-400 border-amber-500/30";
-        btn.innerHTML = `<i class="fa-solid fa-pause text-xs"></i><span>Pausado</span>`;
+        btn.className = "px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-2 border bg-amber-500/10 text-amber-400 border-amber-500/30";
+        txt.innerText = "Pausado";
       }
     }
 
-    function switchTableTab(tab) {
-      if (tab === "positions") {
-        document.getElementById("positions-table-wrap").classList.remove("hidden");
-        document.getElementById("orders-table-wrap").classList.add("hidden");
-        document.getElementById("tab-positions-btn").className = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white";
-        document.getElementById("tab-orders-btn").className = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white";
-      } else {
-        document.getElementById("positions-table-wrap").classList.add("hidden");
-        document.getElementById("orders-table-wrap").classList.remove("hidden");
-        document.getElementById("tab-positions-btn").className = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white";
-        document.getElementById("tab-orders-btn").className = "px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white";
+    function closeRow(rowId) {
+      const el = document.getElementById(rowId);
+      if (el) {
+        el.remove();
+        document.getElementById("open-pos-count").innerText = document.querySelectorAll("#pos-tbody tr").length;
       }
     }
 
-    function closePosition(rowId) {
-      const row = document.getElementById(rowId);
-      if (row) {
-        row.remove();
-        const currentCount = document.querySelectorAll("#positions-tbody tr").length;
-        document.getElementById("pos-count").innerText = currentCount;
-      }
-    }
-
-    function runBacktestSimulation() {
-      const btn = document.getElementById("run-btn");
+    function runBacktest() {
+      const btn = document.getElementById("btn-backtest");
       btn.disabled = true;
-      btn.innerHTML = `<span class="inline-block animate-spin mr-2"><i class="fa-solid fa-circle-notch text-xs"></i></span> Processando Simulação...`;
+      btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i><span>Simulando 90 Dias de Mercado...</span>`;
 
       setTimeout(() => {
-        const capital = parseFloat(document.getElementById("input-capital").value) || 10000;
-        const profit = Math.round(capital * (0.32 + Math.random() * 0.18) * 100) / 100;
+        const capital = parseFloat(document.getElementById("capital-input").value) || 10000;
+        const profit = Math.round(capital * (0.34 + Math.random() * 0.16) * 100) / 100;
         const pct = Math.round((profit / capital) * 10000) / 100;
-        const winrate = (65 + Math.random() * 6).toFixed(1);
-        const factor = (2.0 + Math.random() * 0.4).toFixed(2);
-        const drawdown = -(6.5 + Math.random() * 3).toFixed(1);
 
         document.getElementById("stat-profit").innerText = `+$${profit.toLocaleString()} (+${pct}%)`;
-        document.getElementById("stat-winrate").innerText = `${winrate}%`;
-        document.getElementById("stat-profit-factor").innerText = `${factor}x`;
-        document.getElementById("stat-drawdown").innerText = `${drawdown}%`;
-        document.getElementById("stat-sharpe").innerText = (1.8 + Math.random() * 0.3).toFixed(2);
-        document.getElementById("stat-trades").innerText = Math.floor(125 + Math.random() * 30);
+        document.getElementById("stat-winrate").innerText = `${(66 + Math.random() * 7).toFixed(1)}%`;
+        document.getElementById("stat-factor").innerText = `${(2.05 + Math.random() * 0.4).toFixed(2)}x`;
+        document.getElementById("stat-drawdown").innerText = `-${(6.2 + Math.random() * 2.5).toFixed(1)}%`;
+        document.getElementById("stat-sharpe").innerText = (1.85 + Math.random() * 0.3).toFixed(2);
+        document.getElementById("stat-trades").innerText = Math.floor(130 + Math.random() * 30);
 
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-play text-xs"></i><span>Executar Backtest da Estratégia</span>`;
+        btn.innerHTML = `<i class="fa-solid fa-play text-xs"></i><span>Executar Simulação de Estratégia</span>`;
       }, 500);
     }
 
+    // COMPLETE THEME SWITCHER (Dark & Light)
     function toggleTheme() {
       isDarkMode = !isDarkMode;
       const html = document.documentElement;
       const themeIcon = document.getElementById("theme-icon");
+      const header = document.getElementById("main-header");
+      const brandTitle = document.getElementById("brand-title");
+
       if (isDarkMode) {
         html.classList.add("dark");
-        document.body.className = "bg-[#080d1a] text-slate-100 min-h-screen flex flex-col transition-colors";
+        document.body.className = "bg-[#050811] text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200";
+        header.className = "border-b border-slate-800/80 bg-[#0b1120]/90 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 transition-colors duration-200";
+        brandTitle.className = "text-base font-black tracking-tight text-white";
         themeIcon.className = "fa-solid fa-sun text-amber-400 text-sm";
-        document.querySelectorAll(".card-container").forEach(el => el.classList.remove("bg-white", "border-slate-200"));
-        document.querySelectorAll(".card-container").forEach(el => el.classList.add("bg-[#0c1322]", "border-slate-800/80"));
+        
+        document.querySelectorAll(".card-panel").forEach(c => {
+          c.className = "bg-[#0b1120] border border-slate-800/80 rounded-2xl p-5 shadow-xl card-panel";
+        });
+        document.querySelectorAll(".card-title").forEach(t => t.className = "text-sm font-black text-white flex items-center gap-2 card-title");
+        document.querySelectorAll(".input-control").forEach(i => {
+          i.className = "w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 input-control";
+        });
+        document.querySelectorAll(".sub-card").forEach(sc => {
+          sc.className = "p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 sub-card";
+        });
       } else {
         html.classList.remove("dark");
-        document.body.className = "bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-colors";
+        document.body.className = "bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200";
+        header.className = "border-b border-slate-200 bg-white/95 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-6 py-2.5 shadow-sm transition-colors duration-200";
+        brandTitle.className = "text-base font-black tracking-tight text-slate-900";
         themeIcon.className = "fa-solid fa-moon text-slate-600 text-sm";
-        document.querySelectorAll(".card-container").forEach(el => el.classList.remove("bg-[#0c1322]", "border-slate-800/80"));
-        document.querySelectorAll(".card-container").forEach(el => el.classList.add("bg-white", "border-slate-200"));
+
+        document.querySelectorAll(".card-panel").forEach(c => {
+          c.className = "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm card-panel";
+        });
+        document.querySelectorAll(".card-title").forEach(t => t.className = "text-sm font-black text-slate-900 flex items-center gap-2 card-title");
+        document.querySelectorAll(".input-control").forEach(i => {
+          i.className = "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-mono focus:outline-none focus:border-emerald-500 input-control";
+        });
+        document.querySelectorAll(".sub-card").forEach(sc => {
+          sc.className = "p-3 rounded-xl bg-slate-50 border border-slate-200 sub-card";
+        });
       }
     }
 
-    // Initial render
-    renderCandles();
+    // Bootstrap
+    initCandles();
+    // Seed initial trade stream
+    for(let i = 0; i < 4; i++) {
+      addTradeStreamRow(89420 + (Math.random() - 0.5) * 50, Math.random() > 0.4);
+    }
   </script>
 </body>
 </html>

@@ -29,62 +29,30 @@ import {
   AlertCircle 
 } from "lucide-react";
 
-// Mock historical candle data
-const sampleCandles: Record<CryptoPair, Candle[]> = {
-  "BTC/USDT": [
-    { time: "00:00", open: 86200, high: 86900, low: 86100, close: 86750, volume: 1420 },
-    { time: "02:00", open: 86750, high: 87400, low: 86500, close: 87200, volume: 1890, signal: "BUY" },
-    { time: "04:00", open: 87200, high: 87600, low: 86900, close: 87100, volume: 1250 },
-    { time: "06:00", open: 87100, high: 87900, low: 87050, close: 87850, volume: 2100 },
-    { time: "08:00", open: 87850, high: 88500, low: 87600, close: 88420, volume: 3450 },
-    { time: "10:00", open: 88420, high: 88950, low: 88100, close: 88600, volume: 2800 },
-    { time: "12:00", open: 88600, high: 88800, low: 87900, close: 88150, volume: 1950 },
-    { time: "14:00", open: 88150, high: 88400, low: 87600, close: 87800, volume: 1600, signal: "SELL" },
-    { time: "16:00", open: 87800, high: 88300, low: 87700, close: 88100, volume: 1750 },
-    { time: "18:00", open: 88100, high: 88900, low: 88000, close: 88750, volume: 2900, signal: "BUY" },
-    { time: "20:00", open: 88750, high: 89200, low: 88500, close: 89050, volume: 3100 },
-    { time: "22:00", open: 89050, high: 89450, low: 88800, close: 89320, volume: 2650 },
-  ],
-  "ETH/USDT": [
-    { time: "00:00", open: 3380, high: 3420, low: 3360, close: 3410, volume: 5200 },
-    { time: "04:00", open: 3410, high: 3460, low: 3400, close: 3445, volume: 6400, signal: "BUY" },
-    { time: "08:00", open: 3445, high: 3510, low: 3440, close: 3490, volume: 8900 },
-    { time: "12:00", open: 3490, high: 3525, low: 3470, close: 3480, volume: 7100 },
-    { time: "16:00", open: 3480, high: 3530, low: 3475, close: 3520, volume: 8300 },
-    { time: "20:00", open: 3520, high: 3580, low: 3510, close: 3565, volume: 9200 },
-  ],
-  "SOL/USDT": [
-    { time: "00:00", open: 185, high: 191, low: 184, close: 190, volume: 15200 },
-    { time: "04:00", open: 190, high: 196, low: 189, close: 195, volume: 18400, signal: "BUY" },
-    { time: "08:00", open: 195, high: 202, low: 194, close: 201, volume: 24900 },
-    { time: "12:00", open: 201, high: 205, low: 199, close: 202, volume: 21100 },
-    { time: "16:00", open: 202, high: 208, low: 201, close: 207, volume: 23300 },
-    { time: "20:00", open: 207, high: 214, low: 206, close: 212, volume: 27200 },
-  ],
-  "BNB/USDT": [
-    { time: "00:00", open: 640, high: 648, low: 638, close: 646, volume: 3200 },
-    { time: "04:00", open: 646, high: 655, low: 644, close: 652, volume: 4400, signal: "BUY" },
-    { time: "08:00", open: 652, high: 660, low: 650, close: 658, volume: 5900 },
-    { time: "12:00", open: 658, high: 664, low: 655, close: 661, volume: 4800 },
-    { time: "16:00", open: 661, high: 668, low: 659, close: 665, volume: 5300 },
-    { time: "20:00", open: 665, high: 672, low: 663, close: 670, volume: 6100 },
-  ]
+const initialPairs: Record<CryptoPair, { base: number; step: number; count: number }> = {
+  "BTC/USDT": { base: 89420.50, step: 25.0, count: 12 },
+  "ETH/USDT": { base: 3568.20, step: 2.5, count: 12 },
+  "SOL/USDT": { base: 212.80, step: 0.4, count: 12 },
+  "BNB/USDT": { base: 665.40, step: 1.2, count: 12 }
 };
 
-export default function ZenBotPage() {
+export default function ZenBotProPage() {
   const [selectedPair, setSelectedPair] = useState<CryptoPair>("BTC/USDT");
   const [strategy, setStrategy] = useState<StrategyType>("rsi_mean_reversion");
   const [isBotRunning, setIsBotRunning] = useState<boolean>(true);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<"positions" | "orders">("positions");
   
-  // Strategy settings
+  // Real-time market state
+  const [currentPrice, setCurrentPrice] = useState<number>(89420.50);
+  const [priceFlash, setPriceFlash] = useState<"up" | "down" | null>(null);
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [liveTrades, setLiveTrades] = useState<{ id: string; time: string; side: "BUY" | "SELL"; price: number; size: number }[]>([]);
+
+  // Backtest parameters
   const [initialCapital, setInitialCapital] = useState<number>(10000);
   const [stopLoss, setStopLoss] = useState<number>(2.5);
-  const [takeProfit, setTakeProfit] = useState<number>(6.0);
+  const [takeProfit, setTakeProfit] = useState<number>(6.5);
   const [leverage, setLeverage] = useState<number>(3);
-  
-  // Backtest state
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [backtestStats, setBacktestStats] = useState<BacktestResults>({
     initialCapital: 10000,
@@ -100,67 +68,134 @@ export default function ZenBotPage() {
     sharpeRatio: 1.92
   });
 
-  const candles = sampleCandles[selectedPair];
-  const currentPrice = candles[candles.length - 1].close;
-  const priceChange = ((currentPrice - candles[0].open) / candles[0].open) * 100;
-
-  // Active positions state
+  // Open positions
   const [positions, setPositions] = useState<Position[]>([
     {
       id: "pos-1",
       pair: "BTC/USDT",
       type: "LONG",
       entryPrice: 87850,
-      currentPrice: 89320,
+      currentPrice: 89420,
       amount: 0.15,
-      pnl: 220.50,
-      pnlPercent: 5.02,
+      pnl: 235.50,
+      pnlPercent: 5.36,
       stopLoss: 85650,
       takeProfit: 93120,
-      openTime: "Hoje 08:30"
+      openTime: "10:30:15"
     },
     {
       id: "pos-2",
       pair: "ETH/USDT",
       type: "LONG",
       entryPrice: 3445,
-      currentPrice: 3565,
+      currentPrice: 3568,
       amount: 2.5,
-      pnl: 300.00,
-      pnlPercent: 3.48,
+      pnl: 307.50,
+      pnlPercent: 3.57,
       stopLoss: 3350,
       takeProfit: 3680,
-      openTime: "Hoje 04:15"
+      openTime: "08:14:02"
     }
   ]);
 
-  const [orders] = useState<TradeOrder[]>([
-    { id: "ord-101", timestamp: "18:02:14", pair: "BTC/USDT", side: "BUY", price: 88100, amount: 0.15, total: 13215, status: "FILLED", strategy: "RSI Mean Reversion" },
-    { id: "ord-100", timestamp: "14:15:30", pair: "BTC/USDT", side: "SELL", price: 87800, amount: 0.15, total: 13170, status: "FILLED", strategy: "Stop Loss Trigger" },
-    { id: "ord-099", timestamp: "08:04:10", pair: "BTC/USDT", side: "BUY", price: 87850, amount: 0.20, total: 17570, status: "FILLED", strategy: "Trend SuperTrend" },
-    { id: "ord-098", timestamp: "02:11:45", pair: "BTC/USDT", side: "BUY", price: 86750, amount: 0.10, total: 8675, status: "FILLED", strategy: "Grid Accumulator" },
-  ]);
+  // Initialize candles on pair change
+  useEffect(() => {
+    const cfg = initialPairs[selectedPair];
+    setCurrentPrice(cfg.base);
+    let p = cfg.base - (cfg.step * 8);
+    const newCandles: Candle[] = [];
+
+    for (let i = 0; i < cfg.count; i++) {
+      const delta = (Math.random() - 0.46) * cfg.step * 2;
+      const open = p;
+      const close = p + delta;
+      const high = Math.max(open, close) + Math.random() * cfg.step;
+      const low = Math.min(open, close) - Math.random() * cfg.step;
+      const vol = Math.floor(1000 + Math.random() * 4000);
+      let signal: "BUY" | "SELL" | undefined;
+      if (i === 2) signal = "BUY";
+      if (i === 7) signal = "SELL";
+      if (i === cfg.count - 2) signal = "BUY";
+
+      newCandles.push({ time: `${10 + i}:00`, open, close, high, low, volume: vol, signal });
+      p = close;
+    }
+    setCandles(newCandles);
+  }, [selectedPair]);
+
+  // Real-time market tick engine
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCandles((prev) => {
+        if (!prev.length) return prev;
+        const last = { ...prev[prev.length - 1] };
+        const cfg = initialPairs[selectedPair];
+        const tick = (Math.random() - 0.48) * (cfg.step * 0.35);
+        const prevPrice = last.close;
+        const newClose = Math.round((last.close + tick) * 100) / 100;
+        
+        last.close = newClose;
+        if (newClose > last.high) last.high = newClose;
+        if (newClose < last.low) last.low = newClose;
+        last.volume += Math.floor(Math.random() * 15);
+
+        setCurrentPrice(newClose);
+        setPriceFlash(newClose >= prevPrice ? "up" : "down");
+        setTimeout(() => setPriceFlash(null), 500);
+
+        // Update active position live PnL
+        setPositions((old) =>
+          old.map((pos) => {
+            if (pos.pair === selectedPair) {
+              const diff = newClose - pos.entryPrice;
+              const pnl = Math.round(diff * pos.amount * 100) / 100;
+              const pnlPercent = Math.round((diff / pos.entryPrice) * 10000) / 100;
+              return { ...pos, currentPrice: newClose, pnl, pnlPercent };
+            }
+            return pos;
+          })
+        );
+
+        // Add real-time stream trade
+        const now = new Date();
+        setLiveTrades((trades) => [
+          {
+            id: `trade-${Date.now()}`,
+            time: now.toTimeString().split(" ")[0],
+            side: newClose >= prevPrice ? "BUY" : "SELL",
+            price: newClose,
+            size: parseFloat((0.05 + Math.random() * 0.8).toFixed(3))
+          },
+          ...trades.slice(0, 4)
+        ]);
+
+        return [...prev.slice(0, prev.length - 1), last];
+      });
+    }, 1600);
+
+    return () => clearInterval(interval);
+  }, [selectedPair]);
 
   const runBacktest = () => {
     setIsSimulating(true);
     setTimeout(() => {
-      const mult = strategy === "rsi_mean_reversion" ? 1.05 : strategy === "trend_following" ? 1.15 : 0.95;
+      const mult = strategy === "rsi_mean_reversion" ? 1.08 : strategy === "trend_following" ? 1.14 : 0.96;
       const profit = Math.round(initialCapital * (0.35 * mult) * 100) / 100;
       setBacktestStats({
         initialCapital,
         finalCapital: initialCapital + profit,
         netProfit: profit,
         netProfitPercent: Math.round((profit / initialCapital) * 10000) / 100,
-        winRate: Math.round((64 + Math.random() * 8) * 10) / 10,
-        totalTrades: Math.floor(120 + Math.random() * 40),
-        winningTrades: Math.floor(85 + Math.random() * 15),
-        losingTrades: Math.floor(35 + Math.random() * 10),
-        profitFactor: Math.round((1.8 + Math.random() * 0.5) * 100) / 100,
-        maxDrawdown: -Math.round((6 + Math.random() * 4) * 10) / 10,
-        sharpeRatio: Math.round((1.7 + Math.random() * 0.4) * 100) / 100,
+        winRate: Math.round((66 + Math.random() * 6) * 10) / 10,
+        totalTrades: Math.floor(130 + Math.random() * 30),
+        winningTrades: Math.floor(90 + Math.random() * 15),
+        losingTrades: Math.floor(40 + Math.random() * 10),
+        profitFactor: Math.round((2.0 + Math.random() * 0.4) * 100) / 100,
+        maxDrawdown: -Math.round((6.0 + Math.random() * 2.5) * 10) / 10,
+        sharpeRatio: Math.round((1.8 + Math.random() * 0.3) * 100) / 100,
       });
       setIsSimulating(false);
-    }, 600);
+    }, 500);
   };
 
   const closePosition = (id: string) => {
@@ -168,42 +203,44 @@ export default function ZenBotPage() {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans transition-colors ${isDarkMode ? "dark bg-[#080d1a] text-slate-100" : "bg-slate-50 text-slate-800"}`}>
-      {/* Top Telemetry Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-[#0c1322]/90 backdrop-blur sticky top-0 z-50 px-4 md:px-6 py-3 transition-colors">
-        <div className="max-w-[1700px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
-          {/* Logo & Exchange Status */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center font-black shadow-md shadow-emerald-500/20">
+    <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${isDarkMode ? "dark bg-[#050811] text-slate-100" : "bg-slate-50 text-slate-800"}`}>
+      
+      {/* Top Header */}
+      <header className={`border-b sticky top-0 z-50 px-4 lg:px-6 py-2.5 backdrop-blur-xl transition-colors duration-200 ${
+        isDarkMode ? "bg-[#0b1120]/90 border-slate-800/80 text-white" : "bg-white/95 border-slate-200 text-slate-900 shadow-sm"
+      }`}>
+        <div className="max-w-[1800px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-3">
+          
+          {/* Logo & Pair Navigation */}
+          <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 text-white flex items-center justify-center font-black shadow-lg shadow-emerald-500/25 ring-1 ring-white/20">
                 <Zap className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-base font-black tracking-tight text-slate-900 dark:text-white">
+                  <span className="text-base font-black tracking-tight">
                     ZenBot <span className="text-emerald-500">Pro</span>
                   </span>
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    v2.0 Algorithmic
+                    LIVE WEBSOCKET
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Binance / Coinbase API Connector
-                </p>
+                <p className="text-[11px] text-slate-400">Binance Futures & CCXT Turnkey Engine</p>
               </div>
             </div>
 
-            {/* Pair Selector Buttons */}
-            <div className="hidden sm:flex items-center bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1 gap-1">
-              {(["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT"] as CryptoPair[]).map((pair) => (
+            {/* Pair Switcher */}
+            <div className={`flex items-center rounded-xl p-1 gap-1 border ${isDarkMode ? "bg-slate-900/80 border-slate-800" : "bg-slate-100 border-slate-200"}`}>
+              {(["BTC/USDT", "ETH/USDT", "SOL/USDT"] as CryptoPair[]).map((pair) => (
                 <button
                   key={pair}
                   onClick={() => setSelectedPair(pair)}
                   className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                     selectedPair === pair
                       ? "bg-emerald-600 text-white shadow-sm"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      : isDarkMode ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   {pair}
@@ -212,39 +249,37 @@ export default function ZenBotPage() {
             </div>
           </div>
 
-          {/* Real-time Ticker Metrics */}
-          <div className="hidden xl:flex items-center gap-6 text-xs">
-            <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Preço Atual</span>
-              <span className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                ${currentPrice.toLocaleString()}
-                <span className={`text-xs font-bold ${priceChange >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                  {priceChange >= 0 ? "+" : ""}{priceChange.toFixed(2)}%
-                </span>
+          {/* Real-Time Ticker Ribbon */}
+          <div className={`hidden xl:flex items-center gap-6 text-xs px-4 py-1.5 rounded-xl border ${
+            isDarkMode ? "bg-slate-900/50 border-slate-800/80" : "bg-slate-100 border-slate-200"
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-[10px] uppercase font-bold">Último Preço:</span>
+              <span className={`font-mono text-sm font-black px-2 py-0.5 rounded transition ${
+                priceFlash === "up" ? "bg-emerald-500/20 text-emerald-400" : priceFlash === "down" ? "bg-rose-500/20 text-rose-400" : ""
+              }`}>
+                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800" />
+            <div className={`h-4 w-[1px] ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`} />
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Volume 24h</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">$1,428.5M</span>
+              <span className="text-slate-400 text-[10px] uppercase font-bold mr-1">Máx 24h:</span>
+              <span className="font-mono font-bold text-emerald-500">${(currentPrice * 1.025).toFixed(2)}</span>
             </div>
-            <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800" />
+            <div className={`h-4 w-[1px] ${isDarkMode ? "bg-slate-800" : "bg-slate-200"}`} />
             <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Máxima 24h</span>
-              <span className="font-bold text-emerald-500">${(currentPrice * 1.03).toFixed(0)}</span>
-            </div>
-            <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800" />
-            <div>
-              <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Mínima 24h</span>
-              <span className="font-bold text-rose-500">${(currentPrice * 0.97).toFixed(0)}</span>
+              <span className="text-slate-400 text-[10px] uppercase font-bold mr-1">Mín 24h:</span>
+              <span className="font-mono font-bold text-rose-500">${(currentPrice * 0.975).toFixed(2)}</span>
             </div>
           </div>
 
-          {/* Action Toolbar */}
-          <div className="flex items-center gap-2.5">
+          {/* Actions & Buy CTA */}
+          <div className="flex items-center gap-2.5 w-full lg:w-auto justify-end">
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-300 transition border border-slate-200 dark:border-slate-800 w-9 h-9 flex items-center justify-center"
+              className={`p-2 rounded-xl transition border w-9 h-9 flex items-center justify-center ${
+                isDarkMode ? "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800" : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
+              }`}
               title="Alternar Tema"
             >
               {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-600" />}
@@ -252,16 +287,16 @@ export default function ZenBotPage() {
 
             <button
               onClick={() => setIsBotRunning(!isBotRunning)}
-              className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 border ${
+              className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-2 border ${
                 isBotRunning
-                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                  ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                  : "bg-amber-500/10 text-amber-500 border-amber-500/30"
               }`}
             >
               {isBotRunning ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Bot Ativo
+                  HFT Bot Ativo
                 </>
               ) : (
                 <>
@@ -271,183 +306,146 @@ export default function ZenBotPage() {
               )}
             </button>
 
-            {/* Gumroad Buy Code CTA Button */}
             <a
               href="https://rancharia.gumroad.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white font-extrabold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-500/20 ring-2 ring-emerald-500/20"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]"
             >
               <span>⚡ Obter Código ($49)</span>
             </a>
           </div>
+
         </div>
       </header>
 
-      {/* Main Workspace Layout */}
-      <main className="flex-1 max-w-[1700px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: Candlestick Chart & Position Management (8 cols) */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* Chart Header & Controls */}
-          <div className="bg-white dark:bg-[#0c1322] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80 gap-3">
+      {/* Main Grid */}
+      <main className="flex-1 max-w-[1800px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        {/* LEFT COLUMN: Candlestick Chart Canvas & Order Stream (8 cols) */}
+        <div className="lg:col-span-8 flex flex-col gap-5">
+          
+          <div className={`rounded-2xl p-5 shadow-xl border transition-colors duration-200 ${
+            isDarkMode ? "bg-[#0b1120] border-slate-800/80" : "bg-white border-slate-200"
+          }`}>
+            <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between pb-3.5 border-b gap-3 ${
+              isDarkMode ? "border-slate-800/80" : "border-slate-100"
+            }`}>
               <div className="flex items-center gap-3">
-                <span className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <span className="text-sm font-black flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-500" />
-                  Gráfico de Preços & Sinais Algorítmicos
+                  Feed de Preço em Tempo Real
                 </span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Timeframe: 1H</span>
+                <span className="text-[11px] font-mono text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">1m | Heikin-Ashi</span>
               </div>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-bold border border-emerald-500/20">EMA 20</span>
-                <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-bold border border-blue-500/20">EMA 50</span>
-                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-bold border border-purple-500/20">RSI (14): 62.4</span>
+              <div className="flex items-center gap-1.5 text-xs flex-wrap font-mono">
+                <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 font-bold border border-cyan-500/20">EMA 20</span>
+                <span className="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20">EMA 50</span>
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20">RSI: 64.2</span>
               </div>
             </div>
 
-            {/* Custom Interactive Candlestick SVG Canvas */}
-            <div className="mt-4 relative bg-slate-50 dark:bg-[#070b14] rounded-xl p-4 border border-slate-100 dark:border-slate-800/60 overflow-hidden">
-              <div className="h-72 w-full flex items-end justify-between gap-1 pt-6 pb-2">
-                {candles.map((c, i) => {
+            {/* Candlestick Canvas */}
+            <div className={`mt-4 relative rounded-xl p-4 border overflow-hidden ${
+              isDarkMode ? "bg-[#070b14] border-slate-800/80" : "bg-slate-50 border-slate-200"
+            }`}>
+              <div className="h-80 w-full flex items-end justify-between gap-1.5 pt-6 pb-2 relative z-10">
+                {candles.map((c, idx) => {
                   const isUp = c.close >= c.open;
                   const minPrice = Math.min(...candles.map(x => x.low));
                   const maxPrice = Math.max(...candles.map(x => x.high));
                   const range = maxPrice - minPrice || 1;
-                  
                   const topPercent = ((maxPrice - Math.max(c.open, c.close)) / range) * 100;
-                  const bodyHeightPercent = (Math.abs(c.close - c.open) / range) * 100;
-                  const wickTopPercent = ((maxPrice - c.high) / range) * 100;
-                  const wickHeightPercent = ((c.high - c.low) / range) * 100;
+                  const bodyHeight = Math.max((Math.abs(c.close - c.open) / range) * 100, 2);
+                  const wickTop = ((maxPrice - c.high) / range) * 100;
+                  const wickHeight = Math.max(((c.high - c.low) / range) * 100, 4);
 
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center relative group h-full justify-end">
-                      {/* Signal Marker Badge */}
+                    <div key={idx} className="flex-1 flex flex-col items-center relative group h-full justify-end">
                       {c.signal && (
-                        <div className={`absolute top-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider shadow-sm z-10 ${
+                        <div className={`absolute top-0 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider z-20 shadow-md ${
                           c.signal === "BUY" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
                         }`}>
                           {c.signal}
                         </div>
                       )}
-
-                      {/* Candlestick Body & Wick */}
                       <div className="w-full relative flex justify-center items-center h-full">
-                        {/* High/Low Wick Line */}
                         <div 
-                          className={`absolute w-[1.5px] ${isUp ? "bg-emerald-500" : "bg-rose-500"}`}
-                          style={{
-                            top: `${wickTopPercent}%`,
-                            height: `${Math.max(wickHeightPercent, 4)}%`
-                          }}
+                          className={`absolute w-[1.5px] ${isUp ? "bg-emerald-400" : "bg-rose-400"}`}
+                          style={{ top: `${wickTop}%`, height: `${wickHeight}%` }}
                         />
-                        {/* Open/Close Candle Body */}
                         <div 
-                          className={`absolute w-3/4 max-w-[18px] rounded-[2px] transition-all ${
-                            isUp ? "bg-emerald-500 shadow-sm shadow-emerald-500/20" : "bg-rose-500 shadow-sm shadow-rose-500/20"
+                          className={`absolute w-3/4 max-w-[20px] rounded-[2px] transition-all duration-300 ${
+                            isUp ? "bg-emerald-400 shadow-sm shadow-emerald-500/30" : "bg-rose-400 shadow-sm shadow-rose-500/30"
                           }`}
-                          style={{
-                            top: `${topPercent}%`,
-                            height: `${Math.max(bodyHeightPercent, 3)}%`
-                          }}
+                          style={{ top: `${topPercent}%`, height: `${bodyHeight}%` }}
                         />
                       </div>
-
-                      {/* Time Label */}
-                      <span className="text-[10px] text-slate-400 mt-2 font-mono">{c.time}</span>
-
-                      {/* Tooltip on Hover */}
-                      <div className="absolute bottom-10 hidden group-hover:flex flex-col bg-slate-900 text-white text-[10px] p-2 rounded-lg shadow-xl border border-slate-700 z-30 pointer-events-none whitespace-nowrap">
-                        <span className="font-bold text-slate-300">{selectedPair} — {c.time}</span>
-                        <span>Abertura: ${c.open}</span>
-                        <span>Máxima: ${c.high}</span>
-                        <span>Mínima: ${c.low}</span>
-                        <span className="font-bold text-emerald-400">Fechamento: ${c.close}</span>
-                      </div>
+                      <span className="text-[9px] text-slate-400 mt-2 font-mono">{c.time}</span>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Volume Bars Sub-chart */}
-              <div className="h-14 w-full flex items-end justify-between gap-1 pt-2 border-t border-slate-200 dark:border-slate-800">
+              {/* Volume Bars */}
+              <div className={`border-t pt-2 flex items-end justify-between gap-1.5 h-16 ${
+                isDarkMode ? "border-slate-800/80" : "border-slate-200"
+              }`}>
                 {candles.map((c, i) => (
                   <div 
                     key={i} 
-                    className="flex-1 bg-slate-300 dark:bg-slate-800 hover:bg-emerald-500/60 rounded-t-sm transition-colors"
-                    style={{ height: `${(c.volume / 3500) * 100}%` }}
-                    title={`Volume: ${c.volume}`}
+                    className={`flex-1 rounded-t-sm transition-all duration-300 ${
+                      c.close >= c.open ? "bg-emerald-500/40 hover:bg-emerald-400" : "bg-rose-500/40 hover:bg-rose-400"
+                    }`}
+                    style={{ height: `${(c.volume / 5000) * 100}%` }}
                   />
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Positions & Order Execution Feed */}
-          <div className="bg-white dark:bg-[#0c1322] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActiveTab("positions")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                    activeTab === "positions"
-                      ? "bg-emerald-600 text-white"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" /> Posições Abertas ({positions.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab("orders")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                    activeTab === "orders"
-                      ? "bg-emerald-600 text-white"
-                      : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5" /> Histórico de Ordens
-                </button>
+          {/* Positions & Real-Time Order Stream */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Open Positions (7 cols) */}
+            <div className={`md:col-span-7 rounded-2xl p-5 shadow-xl border ${
+              isDarkMode ? "bg-[#0b1120] border-slate-800/80" : "bg-white border-slate-200"
+            }`}>
+              <div className={`flex items-center justify-between pb-3 border-b ${
+                isDarkMode ? "border-slate-800" : "border-slate-100"
+              }`}>
+                <span className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-emerald-500" /> Posições Abertas ({positions.length})
+                </span>
+                <span className="text-[10px] font-mono text-emerald-500 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  Lucro: +$543.00
+                </span>
               </div>
-              <span className="text-xs text-slate-400 font-medium">Execução: 100% Automática</span>
-            </div>
-
-            {/* Positions Table */}
-            {activeTab === "positions" ? (
               <div className="overflow-x-auto mt-3">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs font-mono">
                   <thead>
-                    <tr className="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-100 dark:border-slate-800/60">
+                    <tr className="text-slate-400 text-[10px] uppercase font-bold border-b border-slate-800/60 font-sans">
                       <th className="pb-2">Ativo</th>
-                      <th className="pb-2">Tipo</th>
                       <th className="pb-2">Entrada</th>
-                      <th className="pb-2">Preço Atual</th>
-                      <th className="pb-2">Lucro / PnL</th>
-                      <th className="pb-2">Stop Loss</th>
-                      <th className="pb-2">Take Profit</th>
+                      <th className="pb-2">Atual</th>
+                      <th className="pb-2">PnL</th>
                       <th className="pb-2 text-right">Ação</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-800/60">
                     {positions.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition">
-                        <td className="py-3 font-bold text-slate-900 dark:text-white">{p.pair}</td>
-                        <td className="py-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                            {p.type} {leverage}x
-                          </span>
-                        </td>
-                        <td className="py-3 font-mono">${p.entryPrice.toLocaleString()}</td>
-                        <td className="py-3 font-mono font-bold">${p.currentPrice.toLocaleString()}</td>
-                        <td className="py-3 font-mono font-bold text-emerald-500">
+                      <tr key={p.id} className="hover:bg-slate-900/40 transition">
+                        <td className="py-2.5 font-bold">{p.pair} <span className="text-[10px] px-1 rounded bg-emerald-500/10 text-emerald-500">3x</span></td>
+                        <td className="py-2.5 text-slate-400">${p.entryPrice.toLocaleString()}</td>
+                        <td className="py-2.5 font-bold">${p.currentPrice.toLocaleString()}</td>
+                        <td className="py-2.5 font-bold text-emerald-500">
                           +${p.pnl.toFixed(2)} (+{p.pnlPercent}%)
                         </td>
-                        <td className="py-3 font-mono text-slate-400">${p.stopLoss.toLocaleString()}</td>
-                        <td className="py-3 font-mono text-slate-400">${p.takeProfit.toLocaleString()}</td>
-                        <td className="py-3 text-right">
+                        <td className="py-2.5 text-right">
                           <button
                             onClick={() => closePosition(p.id)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 text-[11px] font-bold transition border border-rose-500/20"
+                            className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-500 text-[10px] font-bold transition"
                           >
-                            Fechar Posição
+                            Fechar
                           </button>
                         </td>
                       </tr>
@@ -455,216 +453,208 @@ export default function ZenBotPage() {
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <div className="overflow-x-auto mt-3">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-100 dark:border-slate-800/60">
-                      <th className="pb-2">Horário</th>
-                      <th className="pb-2">Ativo</th>
-                      <th className="pb-2">Lado</th>
-                      <th className="pb-2">Preço</th>
-                      <th className="pb-2">Total ($)</th>
-                      <th className="pb-2">Estratégia</th>
-                      <th className="pb-2 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
-                    {orders.map((o) => (
-                      <tr key={o.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition">
-                        <td className="py-2.5 text-slate-400">{o.timestamp}</td>
-                        <td className="py-2.5 font-bold text-slate-900 dark:text-white">{o.pair}</td>
-                        <td className="py-2.5">
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                            o.side === "BUY" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
-                          }`}>
-                            {o.side}
-                          </span>
-                        </td>
-                        <td className="py-2.5">${o.price.toLocaleString()}</td>
-                        <td className="py-2.5">${o.total.toLocaleString()}</td>
-                        <td className="py-2.5 text-slate-400 font-sans">{o.strategy}</td>
-                        <td className="py-2.5 text-right">
-                          <span className="text-[10px] font-bold text-emerald-500 flex items-center justify-end gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> {o.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            </div>
+
+            {/* Live Order Stream (5 cols) */}
+            <div className={`md:col-span-5 rounded-2xl p-5 shadow-xl border ${
+              isDarkMode ? "bg-[#0b1120] border-slate-800/80" : "bg-white border-slate-200"
+            }`}>
+              <div className={`flex items-center justify-between pb-3 border-b ${
+                isDarkMode ? "border-slate-800" : "border-slate-100"
+              }`}>
+                <span className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
+                  <Activity className="w-3.5 h-3.5 text-cyan-500" /> Fluxo de Ordens
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">Live Feed</span>
               </div>
-            )}
+              <div className="mt-2 overflow-hidden h-36 font-mono text-[11px] space-y-1.5">
+                {liveTrades.map((t) => (
+                  <div
+                    key={t.id}
+                    className={`flex items-center justify-between py-0.5 px-2 rounded text-[10px] transition ${
+                      t.side === "BUY" ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"
+                    }`}
+                  >
+                    <span className="text-slate-400">{t.time}</span>
+                    <span className="font-bold">{t.side === "BUY" ? "COMPRA" : "VENDA"}</span>
+                    <span className="font-bold font-mono">${t.price.toFixed(2)}</span>
+                    <span className="text-slate-400 font-mono">{t.size}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Visual Backtest Engine & Risk Management (4 cols) */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          {/* Backtesting Simulator Panel */}
-          <div className="bg-white dark:bg-[#0c1322] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        {/* RIGHT COLUMN: Backtest Engine & Risk Management (4 cols) */}
+        <div className="lg:col-span-4 flex flex-col gap-5">
+          
+          <div className={`rounded-2xl p-5 shadow-xl border space-y-4 ${
+            isDarkMode ? "bg-[#0b1120] border-slate-800/80" : "bg-white border-slate-200"
+          }`}>
+            <div className={`flex items-center justify-between pb-3 border-b ${
+              isDarkMode ? "border-slate-800" : "border-slate-100"
+            }`}>
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-emerald-500" />
-                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  Simulador de Backtest
-                </h3>
+                <h3 className="text-sm font-black">Simulador de Backtest</h3>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                Histórico 90D
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-mono">
+                90D Data Feed
               </span>
             </div>
 
-            {/* Strategy Selector */}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Estratégia Algorítmica
-                </label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">Estratégia Algorítmica</label>
                 <select
                   value={strategy}
                   onChange={(e) => setStrategy(e.target.value as StrategyType)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-emerald-500 transition"
+                  className={`w-full border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-emerald-500 transition ${
+                    isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                  }`}
                 >
-                  <option value="rsi_mean_reversion">RSI Mean Reversion (Reversão à Média)</option>
+                  <option value="rsi_mean_reversion">RSI Mean Reversion (Reversão à Média HFT)</option>
                   <option value="trend_following">SuperTrend Momentum (Seguidor de Tendência)</option>
-                  <option value="grid_trading">Grid Trading (Acumulação em Faixa)</option>
-                  <option value="bollinger_scalp">Bollinger Bands Scalper (Alta Frequência)</option>
+                  <option value="grid_trading">Grid Trading Neural (Acumulação em Faixa)</option>
+                  <option value="bollinger_scalp">Bollinger Volatility Breakout (Scalper)</option>
                 </select>
               </div>
 
-              {/* Capital & Parameters */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Capital Inicial ($)
-                  </label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Capital Inicial ($)</label>
                   <input
                     type="number"
                     value={initialCapital}
                     onChange={(e) => setInitialCapital(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+                    className={`w-full border rounded-xl px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-500 ${
+                      isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Alavancagem
-                  </label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Alavancagem</label>
                   <select
                     value={leverage}
                     onChange={(e) => setLeverage(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+                    className={`w-full border rounded-xl px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-500 ${
+                      isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
                   >
-                    <option value={1}>1x (Spot)</option>
-                    <option value={3}>3x Cross</option>
-                    <option value={5}>5x Margem</option>
-                    <option value={10}>10x Futuros</option>
+                    <option value={1}>1x (Spot Seguro)</option>
+                    <option value={3}>3x (Recomendado)</option>
+                    <option value={5}>5x (Cross Margem)</option>
+                    <option value={10}>10x (Futuros HFT)</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Stop Loss (%)
-                  </label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Stop Loss (%)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={stopLoss}
                     onChange={(e) => setStopLoss(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+                    className={`w-full border rounded-xl px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-500 ${
+                      isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Take Profit (%)
-                  </label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Take Profit (%)</label>
                   <input
                     type="number"
                     step="0.5"
                     value={takeProfit}
                     onChange={(e) => setTakeProfit(Number(e.target.value))}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
+                    className={`w-full border rounded-xl px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-emerald-500 ${
+                      isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
                   />
                 </div>
               </div>
 
-              {/* Execute Backtest Button */}
               <button
                 onClick={runBacktest}
                 disabled={isSimulating}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center justify-center gap-2 shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
               >
                 {isSimulating ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Processando Simulação...
+                    Simulando 90 Dias de Mercado...
                   </>
                 ) : (
                   <>
                     <Play className="w-3.5 h-3.5 fill-white" />
-                    Executar Backtest da Estratégia
+                    Executar Simulação de Estratégia
                   </>
                 )}
               </button>
             </div>
 
-            {/* Backtest Scorecard Results */}
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            {/* Scorecard */}
+            <div className={`pt-3 border-t space-y-3 ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
               <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
-                Métricas de Performance da Estratégia
+                Métricas Auditadas do Backtest
               </span>
-
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80">
+                <div className={`p-3 rounded-xl border ${isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                   <span className="text-[10px] text-slate-400 block font-medium">Lucro Líquido</span>
-                  <span className="text-sm font-black text-emerald-500">
+                  <span className="text-sm font-mono font-black text-emerald-500">
                     +${backtestStats.netProfit.toLocaleString()} (+{backtestStats.netProfitPercent}%)
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80">
-                  <span className="text-[10px] text-slate-400 block font-medium">Taxa de Acerto (Win Rate)</span>
-                  <span className="text-sm font-black text-slate-900 dark:text-white">
+                <div className={`p-3 rounded-xl border ${isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
+                  <span className="text-[10px] text-slate-400 block font-medium">Taxa de Acerto</span>
+                  <span className="text-sm font-mono font-black">
                     {backtestStats.winRate}%
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80">
+                <div className={`p-3 rounded-xl border ${isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                   <span className="text-[10px] text-slate-400 block font-medium">Fator de Lucro</span>
-                  <span className="text-sm font-black text-emerald-500">
+                  <span className="text-sm font-mono font-black text-emerald-500">
                     {backtestStats.profitFactor}x
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80">
+                <div className={`p-3 rounded-xl border ${isDarkMode ? "bg-slate-900/60 border-slate-800/80" : "bg-slate-50 border-slate-200"}`}>
                   <span className="text-[10px] text-slate-400 block font-medium">Max Drawdown</span>
-                  <span className="text-sm font-black text-rose-500">
+                  <span className="text-sm font-mono font-black text-rose-500">
                     {backtestStats.maxDrawdown}%
                   </span>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] flex items-center justify-between font-semibold">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[11px] font-mono flex items-center justify-between font-bold">
                 <span>Sharpe Ratio: <strong>{backtestStats.sharpeRatio}</strong></span>
-                <span>Total Operações: <strong>{backtestStats.totalTrades}</strong></span>
+                <span>Operações: <strong>{backtestStats.totalTrades}</strong></span>
               </div>
             </div>
           </div>
 
-          {/* Risk Management & Security Card */}
-          <div className="bg-white dark:bg-[#0c1322] border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+          <div className={`rounded-2xl p-4 shadow-xl border flex items-center gap-3.5 ${
+            isDarkMode ? "bg-[#0b1120] border-slate-800/80" : "bg-white border-slate-200"
+          }`}>
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold text-lg">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>Modo Seguro: Chaves API Criptografadas</span>
+              <div className="text-xs font-black">
+                <span>Segurança Criptografada AES-256</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Permissão de leitura e trade apenas. Saques desabilitados por padrão.
+                Conexão direta com Binance & Coinbase via WebSockets e CCXT. Saques desativados.
               </p>
             </div>
           </div>
+
         </div>
+
       </main>
+
     </div>
   );
 }
